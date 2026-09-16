@@ -38,7 +38,7 @@
     <header>
       <div class="title-area">
         <h1>65536</h1>
-        <div class="subtitle">Reverse 2048 <span class="version-tag">v1.07</span></div>
+        <div class="subtitle">Reverse 2048 <span class="version-tag">v1.08</span></div>
       </div>
       <div class="header-actions">
         <button id="headerInstallBtn" class="icon-btn" aria-label="Install on this device" title="Install on this device">
@@ -134,7 +134,7 @@
       <button id="undoBtn" class="btn" disabled>
         <span>↩ Undo</span>
       </button>
-      <button id="hammerBtn" class="btn btn-warning" title="Smash any tile ≤ 256 (+1 per level win)">
+      <button id="hammerBtn" class="btn btn-warning" title="Smash any tile ≤ 256 (+1 per 25,000 pts & level win)">
         <span>🔨 Smash (<span id="hammerCount">1</span>)</span>
       </button>
       <button id="warpBtn" class="btn btn-warp" title="Move breaker to any empty cell (earned every 200,000 pts)" disabled>
@@ -176,7 +176,7 @@
         <div class="breaker-legend-list">
           <div class="legend-item">
             <span style="font-size:1.2rem;">🔨</span>
-            <span><strong>Shatter Hammer (≤ 256 only)</strong>: Starts with 1 hammer. Earn +1 on every Level win! Can only shatter tiles with value ≤ 256.</span>
+            <span><strong>Shatter Hammer (≤ 256 only)</strong>: Starts with 1 hammer. Earn +1 hammer every 25,000 points (and +1 on every Level win)! Can only shatter tiles with value ≤ 256.</span>
           </div>
           <div class="legend-item">
             <span style="font-size:1.2rem;">⚡</span>

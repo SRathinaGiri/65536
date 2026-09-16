@@ -7,7 +7,8 @@ class GameEngine {
     this.level = options.level || 1;
     this.currentStartValue = options.startValue || 4096; // Level 1 starts at 4096
     this.hammerCharges = 1; // 1 hammer by default
-    this.warpCharges = 0;   // Earned every 25,000 points
+    this.lastHammerScore = 0; // Earned every 25,000 points
+    this.warpCharges = 0;   // Earned every 200,000 points
     this.lastWarpScore = 0;
 
     this.grid = [];
@@ -51,6 +52,7 @@ class GameEngine {
       this.moves = 0;
       this.tilesShattered = 0;
       this.hammerCharges = 1; // 1 hammer available by default
+      this.lastHammerScore = 0;
       this.warpCharges = 0;
       this.lastWarpScore = 0;
     }
@@ -329,6 +331,7 @@ class GameEngine {
       tilesShattered: this.tilesShattered,
       tileIdCounter: this.tileIdCounter,
       hammerCharges: this.hammerCharges,
+      lastHammerScore: this.lastHammerScore,
       warpCharges: this.warpCharges
     });
   }
@@ -345,6 +348,7 @@ class GameEngine {
     this.tilesShattered = snapshot.tilesShattered;
     this.tileIdCounter = snapshot.tileIdCounter;
     if (snapshot.hammerCharges !== undefined) this.hammerCharges = snapshot.hammerCharges;
+    if (snapshot.lastHammerScore !== undefined) this.lastHammerScore = snapshot.lastHammerScore;
     if (snapshot.warpCharges !== undefined) this.warpCharges = snapshot.warpCharges;
     this.isGameOver = false;
 
@@ -642,6 +646,15 @@ class GameEngine {
         }
       });
 
+      // Award Shatter Hammer bonus every 25,000 points
+      const HAMMER_POINTS_INTERVAL = 25000;
+      if (this.score - this.lastHammerScore >= HAMMER_POINTS_INTERVAL) {
+        const awarded = Math.floor((this.score - this.lastHammerScore) / HAMMER_POINTS_INTERVAL);
+        this.hammerCharges += awarded;
+        this.lastHammerScore += awarded * HAMMER_POINTS_INTERVAL;
+        this.emit('hammerAwarded', { count: awarded, total: this.hammerCharges });
+      }
+
       // Award Breaker Warp bonus every 200,000 points
       const WARP_POINTS_INTERVAL = 200000;
       if (this.score - this.lastWarpScore >= WARP_POINTS_INTERVAL) {
@@ -750,6 +763,7 @@ class GameEngine {
       level: this.level,
       currentStartValue: this.currentStartValue,
       hammerCharges: this.hammerCharges,
+      lastHammerScore: this.lastHammerScore,
       warpCharges: this.warpCharges,
       lastWarpScore: this.lastWarpScore
     };
@@ -769,6 +783,7 @@ class GameEngine {
     this.level = state.level || 1;
     this.currentStartValue = state.currentStartValue || 4096;
     this.hammerCharges = state.hammerCharges !== undefined ? state.hammerCharges : 1;
+    this.lastHammerScore = state.lastHammerScore !== undefined ? state.lastHammerScore : Math.floor(this.score / 25000) * 25000;
     this.warpCharges = state.warpCharges !== undefined ? state.warpCharges : 0;
     this.lastWarpScore = state.lastWarpScore !== undefined ? state.lastWarpScore : Math.floor(this.score / 200000) * 200000;
     this.undoStack = [];

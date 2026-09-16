@@ -2,7 +2,7 @@
 
 [![Play Online](https://img.shields.io/badge/Play%20Online-srathinagiri.github.io%2F65536-00f0ff?style=for-the-badge&logo=githubpages&logoColor=white)](https://srathinagiri.github.io/65536/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Local--First%20%26%20Offline-10b981?style=for-the-badge&logo=pwa&logoColor=white)](https://srathinagiri.github.io/65536/)
-[![Version](https://img.shields.io/badge/Version-v1.07-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
+[![Version](https://img.shields.io/badge/Version-v1.08-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 An addictive, tactical HTML5 Progressive Web App (PWA) that inverts the iconic **2048** mechanic on its head.
@@ -22,7 +22,11 @@ Built strictly as a **Local-First PWA**:
 
 ---
 
-## 📸 Gameplay Preview
+## 📸 Gameplay Preview & Demo Video
+
+<video src="assets/65536.mp4" controls="controls" muted="muted" width="100%"></video>
+
+> 🎬 **Watch the gameplay demonstration:** [assets/65536.mp4](assets/65536.mp4)
 
 ![65536 Gameplay Screenshot](assets/screenshot.png)
 
@@ -60,7 +64,7 @@ To master higher tiers, two strategic abilities are at your disposal:
 
 ### 🔨 Shatter Hammer (≤ 256 Only)
 - **Starts with 1 Hammer** by default.
-- **Earn +1 Hammer** on every campaign level cleared!
+- **Earn +1 Hammer every 25,000 points** scored (and +1 on every campaign level cleared)!
 - **Strictly restricted to tiles with values $\le 256$** to prevent trivial random wins and reward calculated division.
 - Tap **🔨 Smash** to enter targeting mode: eligible tiles ($\le 256$) glow with a golden border and a `🔨 BREAK` badge, while larger tiles ($> 256$) are protected with `🛡️ IMMUNE`.
 
