@@ -474,7 +474,7 @@ class GameEngine {
                   numberTile.isEliminated = true;
                   this.grid[nextR][nextC] = null;
                   this.tilesShattered += 8;
-                  this.score += (prevVal * 8) + 50000; // Mega bonus
+                  this.score += prevVal * 8;
                   interactionData.eliminated = true;
                   interactionData.isBonus8 = true;
                 } else {
@@ -517,7 +517,7 @@ class GameEngine {
                     }
                   });
 
-                  this.score += (prevVal - newVal) * 8 + 800;
+                  this.score += prevVal * 8;
                   this.tilesShattered += 1;
                   interactionData.isBonus8 = true;
                 }
@@ -527,7 +527,7 @@ class GameEngine {
                   numberTile.isEliminated = true;
                   this.grid[nextR][nextC] = null;
                   this.tilesShattered += 4;
-                  this.score += (prevVal * 4) + 25000;
+                  this.score += prevVal * 4;
                   interactionData.eliminated = true;
                 } else {
                   this.grid[nextR][nextC] = null;
@@ -570,7 +570,7 @@ class GameEngine {
                     }
                   });
 
-                  this.score += (prevVal - newVal) * 4 + 400;
+                  this.score += prevVal * 4;
                   this.tilesShattered += 1;
                 }
               } else {
@@ -579,7 +579,7 @@ class GameEngine {
                   numberTile.isEliminated = true;
                   this.grid[nextR][nextC] = null; // Both tiles disappear from board!
                   this.tilesShattered += 2;
-                  this.score += (prevVal * 2) + 10000; // Bonus for clearing
+                  this.score += prevVal * 2;
                   interactionData.eliminated = true;
                 } else {
                   // Place First tile at collision point (nextR, nextC)
@@ -604,9 +604,8 @@ class GameEngine {
                     interactedTiles.add(secondTile.id);
                   }
 
-                  // Points earned
-                  const gainedPoints = (prevVal - newVal) * 2 + divisor * 50;
-                  this.score += gainedPoints;
+                  // Points earned: exactly proportional (prevVal * 2)
+                  this.score += prevVal * 2;
                 }
               }
 
