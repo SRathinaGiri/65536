@@ -38,7 +38,7 @@
     <header>
       <div class="title-area">
         <h1>65536</h1>
-        <div class="subtitle">Reverse 2048 <span class="version-tag">v1.08</span></div>
+        <div class="subtitle">Reverse 2048 <span class="version-tag">v1.09</span></div>
       </div>
       <div class="header-actions">
         <button id="headerInstallBtn" class="icon-btn" aria-label="Install on this device" title="Install on this device">
@@ -137,8 +137,8 @@
       <button id="hammerBtn" class="btn btn-warning" title="Smash any tile ≤ 256 (+1 per 25,000 pts & level win)">
         <span>🔨 Smash (<span id="hammerCount">1</span>)</span>
       </button>
-      <button id="warpBtn" class="btn btn-warp" title="Move breaker to any empty cell (earned every 200,000 pts)" disabled>
-        <span>⚡ Warp (<span id="warpCount">0</span>)</span>
+      <button id="warpBtn" class="btn btn-warp" title="Move breaker to any empty cell (+1 per 50,000 pts)">
+        <span>⚡ Warp (<span id="warpCount">1</span>)</span>
       </button>
       <button id="newGameBtn" class="btn btn-primary">
         <span>🔄 New</span>
@@ -180,7 +180,7 @@
           </div>
           <div class="legend-item">
             <span style="font-size:1.2rem;">⚡</span>
-            <span><strong>Breaker Warp (200,000 Pts)</strong>: Earn +1 Warp charge every 200,000 points! Tap Warp and click any empty cell to place the breaker wherever you need it!</span>
+            <span><strong>Breaker Warp (50,000 Pts)</strong>: Starts with 1 Warp. Earn +1 Warp charge every 50,000 points! Tap Warp and click any empty cell to place the breaker wherever you need it!</span>
           </div>
         </div>
 

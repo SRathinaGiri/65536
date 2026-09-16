@@ -2,7 +2,7 @@
 
 [![Play Online](https://img.shields.io/badge/Play%20Online-srathinagiri.github.io%2F65536-00f0ff?style=for-the-badge&logo=githubpages&logoColor=white)](https://srathinagiri.github.io/65536/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Local--First%20%26%20Offline-10b981?style=for-the-badge&logo=pwa&logoColor=white)](https://srathinagiri.github.io/65536/)
-[![Version](https://img.shields.io/badge/Version-v1.08-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
+[![Version](https://img.shields.io/badge/Version-v1.09-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 An addictive, tactical HTML5 Progressive Web App (PWA) that inverts the iconic **2048** mechanic on its head.
@@ -68,8 +68,9 @@ To master higher tiers, two strategic abilities are at your disposal:
 - **Strictly restricted to tiles with values $\le 256$** to prevent trivial random wins and reward calculated division.
 - Tap **🔨 Smash** to enter targeting mode: eligible tiles ($\le 256$) glow with a golden border and a `🔨 BREAK` badge, while larger tiles ($> 256$) are protected with `🛡️ IMMUNE`.
 
-### ⚡ Breaker Warp (Earned Every 200,000 Points)
-- Earn **+1 Warp charge** for every **200,000 points** scored.
+### ⚡ Breaker Warp (Earned Every 50,000 Points)
+- **Starts with 1 Warp** by default.
+- Earn **+1 Warp charge** for every **50,000 points** scored.
 - Tap **⚡ Warp** and click any empty cell on the board to instantly teleport the active breaker tile wherever you need it most.
 
 ---

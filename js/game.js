@@ -8,7 +8,7 @@ class GameEngine {
     this.currentStartValue = options.startValue || 4096; // Level 1 starts at 4096
     this.hammerCharges = 1; // 1 hammer by default
     this.lastHammerScore = 0; // Earned every 25,000 points
-    this.warpCharges = 0;   // Earned every 200,000 points
+    this.warpCharges = 1;   // 1 warp by default, earned every 50,000 points
     this.lastWarpScore = 0;
 
     this.grid = [];
@@ -53,7 +53,7 @@ class GameEngine {
       this.tilesShattered = 0;
       this.hammerCharges = 1; // 1 hammer available by default
       this.lastHammerScore = 0;
-      this.warpCharges = 0;
+      this.warpCharges = 1; // 1 warp available by default
       this.lastWarpScore = 0;
     }
     this.isWon = false;
@@ -655,8 +655,8 @@ class GameEngine {
         this.emit('hammerAwarded', { count: awarded, total: this.hammerCharges });
       }
 
-      // Award Breaker Warp bonus every 200,000 points
-      const WARP_POINTS_INTERVAL = 200000;
+      // Award Breaker Warp bonus every 50,000 points
+      const WARP_POINTS_INTERVAL = 50000;
       if (this.score - this.lastWarpScore >= WARP_POINTS_INTERVAL) {
         const awarded = Math.floor((this.score - this.lastWarpScore) / WARP_POINTS_INTERVAL);
         this.warpCharges += awarded;
@@ -784,8 +784,8 @@ class GameEngine {
     this.currentStartValue = state.currentStartValue || 4096;
     this.hammerCharges = state.hammerCharges !== undefined ? state.hammerCharges : 1;
     this.lastHammerScore = state.lastHammerScore !== undefined ? state.lastHammerScore : Math.floor(this.score / 25000) * 25000;
-    this.warpCharges = state.warpCharges !== undefined ? state.warpCharges : 0;
-    this.lastWarpScore = state.lastWarpScore !== undefined ? state.lastWarpScore : Math.floor(this.score / 200000) * 200000;
+    this.warpCharges = state.warpCharges !== undefined ? state.warpCharges : 1;
+    this.lastWarpScore = state.lastWarpScore !== undefined ? state.lastWarpScore : Math.floor(this.score / 50000) * 50000;
     this.undoStack = [];
     this.emit('stateChange', this.getState());
   }
