@@ -38,7 +38,7 @@
     <header>
       <div class="title-area">
         <h1>65536</h1>
-        <div class="subtitle">Reverse 2048 <span class="version-tag">v1.05</span></div>
+        <div class="subtitle">Reverse 2048 <span class="version-tag">v1.06</span></div>
       </div>
       <div class="header-actions">
         <button id="headerInstallBtn" class="icon-btn" aria-label="Install on this device" title="Install on this device">
@@ -83,6 +83,37 @@
         <span class="breaker-pill pill-2">÷2</span>
         <span class="breaker-pill pill-4">÷4</span>
         <span class="breaker-pill pill-8">÷8</span>
+      </div>
+    </div>
+
+    <!-- First-Time Interactive Tutorial Banner -->
+    <div id="tutorialBanner" class="tutorial-banner" style="display: none;">
+      <div class="tutorial-step" id="tutorialStep1">
+        <div class="tutorial-top-row">
+          <span class="tutorial-badge">TUTORIAL • 1 / 2</span>
+          <button id="tutorialSkipBtn" class="tutorial-skip-btn" aria-label="Skip Tutorial">Skip ✕</button>
+        </div>
+        <div class="tutorial-heading">🎯 Welcome! Reverse 2048 Goal:</div>
+        <div class="tutorial-text">
+          Instead of merging, your goal is to <strong>shatter</strong> the big tile down to zero!
+          <strong>Swipe</strong> to slide the pulsing crimson <span class="breaker-pill pill-2" style="font-size:0.75rem; padding: 1px 7px;">÷2</span> breaker into the tile to cut it in half!
+        </div>
+        <div class="tutorial-swipe-hint">
+          <span class="swipe-hand-icon">👆</span>
+          <span>Swipe in any direction to move the breaker</span>
+        </div>
+      </div>
+
+      <div class="tutorial-step" id="tutorialStep2" style="display: none;">
+        <div class="tutorial-top-row">
+          <span class="tutorial-badge tutorial-badge-success">TUTORIAL • 2 / 2</span>
+          <button id="tutorialCloseBtn" class="tutorial-skip-btn" aria-label="Close Tutorial">✕</button>
+        </div>
+        <div class="tutorial-heading">💥 Nice hit! Tiles NEVER merge!</div>
+        <div class="tutorial-text">
+          Numbers never combine together. Keep breaking them down until they reach <strong>≤ 16</strong>, when they <strong>completely vanish</strong> from the board!
+        </div>
+        <button id="tutorialDoneBtn" class="tutorial-done-btn">Got it, let's play! ▶</button>
       </div>
     </div>
 
@@ -177,6 +208,10 @@
         </div>
 
         <p><strong>Ultimate Goal:</strong> Clear all target tiles to advance through the campaign from 4096 all the way to 65536!</p>
+
+        <button id="replayTutorialBtn" class="btn" style="width: 100%; margin-top: 14px; background: rgba(99, 102, 241, 0.25); border: 1px solid rgba(139, 92, 246, 0.5); font-size: 0.9rem;">
+          🔄 Show Quick Tutorial Hint
+        </button>
       </div>
     </div>
   </div>

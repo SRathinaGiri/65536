@@ -135,6 +135,14 @@ class StorageManager {
       localStorage.setItem(this.prefix + 'stats', JSON.stringify(stats));
     } catch (e) {}
   }
+
+  hasSeenTutorial() {
+    return localStorage.getItem(this.prefix + 'tutorial_seen') === 'true';
+  }
+
+  setTutorialSeen(seen = true) {
+    localStorage.setItem(this.prefix + 'tutorial_seen', seen ? 'true' : 'false');
+  }
 }
 
 window.storageManager = new StorageManager();

@@ -28,6 +28,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeInstallBtn = document.getElementById('closeInstallBtn');
   const settingsInstallBtn = document.getElementById('settingsInstallBtn');
   const settingsInstallNote = document.getElementById('settingsInstallNote');
+  const tutorialBanner = document.getElementById('tutorialBanner');
+  const tutorialStep1 = document.getElementById('tutorialStep1');
+  const tutorialStep2 = document.getElementById('tutorialStep2');
+  const tutorialSkipBtn = document.getElementById('tutorialSkipBtn');
+  const tutorialCloseBtn = document.getElementById('tutorialCloseBtn');
+  const tutorialDoneBtn = document.getElementById('tutorialDoneBtn');
+  const replayTutorialBtn = document.getElementById('replayTutorialBtn');
 
   // Modals
   const helpModal = document.getElementById('helpModal');
@@ -116,6 +123,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Best score initial display
   bestScoreValEl.textContent = window.storageManager.getBestScore().toLocaleString();
+
+  // Interactive First-Time Onboarding Tutorial
+  let tutorialActive = false;
+  let tutorialStep = 1;
+
+  function showTutorial(step = 1) {
+    if (!tutorialBanner) return;
+    tutorialActive = true;
+    tutorialStep = step;
+    tutorialBanner.style.display = 'block';
+    if (step === 1) {
+      if (tutorialStep1) tutorialStep1.style.display = 'flex';
+      if (tutorialStep2) tutorialStep2.style.display = 'none';
+      if (boardEl) boardEl.classList.add('tutorial-active');
+    } else {
+      if (tutorialStep1) tutorialStep1.style.display = 'none';
+      if (tutorialStep2) tutorialStep2.style.display = 'flex';
+      if (boardEl) boardEl.classList.remove('tutorial-active');
+    }
+  }
+
+  function dismissTutorial() {
+    if (!tutorialBanner) return;
+    tutorialActive = false;
+    tutorialBanner.style.display = 'none';
+    if (boardEl) boardEl.classList.remove('tutorial-active');
+    window.storageManager.setTutorialSeen(true);
+  }
+
+  if (tutorialSkipBtn) tutorialSkipBtn.addEventListener('click', dismissTutorial);
+  if (tutorialCloseBtn) tutorialCloseBtn.addEventListener('click', dismissTutorial);
+  if (tutorialDoneBtn) tutorialDoneBtn.addEventListener('click', dismissTutorial);
+
+  if (replayTutorialBtn) {
+    replayTutorialBtn.addEventListener('click', () => {
+      if (helpModal) helpModal.classList.remove('active');
+      showTutorial(1);
+    });
+  }
 
   // Floating score indicator
   function showScoreGained(amount, row, col) {
@@ -338,6 +384,9 @@ document.addEventListener('DOMContentLoaded', () => {
   game.on('tileBroken', (data) => {
     window.soundFX.playHit(data.breakerValue);
     renderer.triggerBreakImpact(data.row, data.col, data.breakerValue, game.gridSize);
+    if (tutorialActive && tutorialStep === 1) {
+      showTutorial(2);
+    }
   });
 
   game.on('tileCleared', (data) => {
@@ -376,6 +425,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Input events
   input.on('move', (direction) => {
+    if (tutorialActive && tutorialStep === 2) {
+      dismissTutorial();
+    }
     game.move(direction);
   });
 
@@ -570,7 +622,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Local-first Service Worker registration & version management
-  const APP_VERSION = '1.05';
+  const APP_VERSION = '1.06';
   console.log(`%c[65536]%c Local-first PWA v${APP_VERSION} active`, 'color:#8b5cf6;font-weight:bold;', 'color:#00f0ff;font-weight:bold;');
 
   if ('serviceWorker' in navigator) {
@@ -632,5 +684,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const highestLevel = window.storageManager.getHighestLevel();
     const startVal = Math.pow(2, highestLevel + 11);
     game.setLevel(highestLevel, startVal);
+    // Show interactive onboarding tutorial for new players
+    if (!window.storageManager.hasSeenTutorial()) {
+      setTimeout(() => showTutorial(1), 350);
+    }
   }
 });
