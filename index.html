@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>65536 - The Reverse 2048 PWA</title>
+  
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="description" content="Inverted 2048 puzzle game: Shatter 65536 down with high-contrast breakers (2, 4, 8) until all tiles disappear!">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="65536">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- PWA Install & Update Banner -->
+    <div id="installBanner" class="install-banner">
+      <span id="installBannerText" class="install-banner-text">⚡ Install 65536 on this device for offline play</span>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button id="installBtn" class="install-banner-btn">Install App</button>
+        <button id="closeInstallBtn" class="install-close-btn" aria-label="Close">&times;</button>
+      </div>
+    </div>
+
+    <!-- Header Section -->
+    <header>
+      <div class="title-area">
+        <h1>65536</h1>
+        <div class="subtitle">Reverse 2048 <span class="version-tag">v1.05</span></div>
+      </div>
+      <div class="header-actions">
+        <button id="headerInstallBtn" class="icon-btn" aria-label="Install on this device" title="Install on this device">
+          <span class="icon">📥</span>
+        </button>
+        <button id="soundToggleBtn" class="icon-btn" aria-label="Toggle Sound" title="Sound Effects: ON (Tap to mute)">
+          <span class="icon">🔊</span>
+        </button>
+        <button id="helpBtn" class="icon-btn" aria-label="How to play">
+          <span class="icon">❓</span>
+        </button>
+        <button id="settingsBtn" class="icon-btn" aria-label="Game Settings">
+          <span class="icon">⚙️</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-card level">
+        <div class="stat-label">Level</div>
+        <div id="levelValue" class="stat-value">LV 1</div>
+      </div>
+      <div class="stat-card score">
+        <div class="stat-label">Score</div>
+        <div id="scoreValue" class="stat-value">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Best</div>
+        <div id="bestScoreValue" class="stat-value">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Cleared</div>
+        <div id="shatteredValue" class="stat-value">0</div>
+      </div>
+    </div>
+
+    <!-- Breaker Status / Legend Banner -->
+    <div class="breaker-banner">
+      <span class="breaker-banner-title">Breakers (Divide):</span>
+      <div class="breaker-pills">
+        <span class="breaker-pill pill-2">÷2</span>
+        <span class="breaker-pill pill-4">÷4</span>
+        <span class="breaker-pill pill-8">÷8</span>
+      </div>
+    </div>
+
+    <!-- Main Board Area -->
+    <div class="board-wrapper">
+      <div id="hammerBanner" class="hammer-banner" style="display: none;">
+        🔨 Smash Active: Tap any tile ≤ 256 to shatter!
+      </div>
+      <div id="warpBanner" class="warp-banner" style="display: none;">
+        ⚡ Warp Active: Tap any empty cell to relocate breaker!
+      </div>
+      <canvas id="particleCanvas"></canvas>
+      <div id="board" class="board-container"></div>
+    </div>
+
+    <!-- Controls Bar -->
+    <div class="controls-bar">
+      <button id="undoBtn" class="btn" disabled>
+        <span>↩ Undo</span>
+      </button>
+      <button id="hammerBtn" class="btn btn-warning" title="Smash any tile ≤ 256 (+1 per level win)">
+        <span>🔨 Smash (<span id="hammerCount">1</span>)</span>
+      </button>
+      <button id="warpBtn" class="btn btn-warp" title="Move breaker to any empty cell (earned every 200,000 pts)" disabled>
+        <span>⚡ Warp (<span id="warpCount">0</span>)</span>
+      </button>
+      <button id="newGameBtn" class="btn btn-primary">
+        <span>🔄 New</span>
+      </button>
+    </div>
+
+    <!-- Virtual D-Pad (Configurable in Settings) -->
+    <div id="dpadContainer" class="dpad-container" style="display: none;">
+      <button class="dpad-btn" data-dir="up" aria-label="Swipe Up">▲</button>
+      <div class="dpad-middle">
+        <button class="dpad-btn" data-dir="left" aria-label="Swipe Left">◀</button>
+        <button class="dpad-btn" data-dir="right" aria-label="Swipe Right">▶</button>
+      </div>
+      <button class="dpad-btn" data-dir="down" aria-label="Swipe Down">▼</button>
+    </div>
+
+  </div>
+
+  <!-- How to Play Modal -->
+  <div id="helpModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">How to Play 65536</h2>
+        <button class="icon-btn modal-close" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Welcome to <strong>65536</strong> — the tactical reverse of 2048!</p>
+
+        <div class="rule-highlight">
+          <strong>🚫 NO MERGING:</strong>
+          Tiles never merge together. Two numbers touching do not combine!
+        </div>
+
+        <p><strong>🔨 Tactical Power-ups:</strong></p>
+        <div class="breaker-legend-list">
+          <div class="legend-item">
+            <span style="font-size:1.2rem;">🔨</span>
+            <span><strong>Shatter Hammer (≤ 256 only)</strong>: Starts with 1 hammer. Earn +1 on every Level win! Can only shatter tiles with value ≤ 256.</span>
+          </div>
+          <div class="legend-item">
+            <span style="font-size:1.2rem;">⚡</span>
+            <span><strong>Breaker Warp (200,000 Pts)</strong>: Earn +1 Warp charge every 200,000 points! Tap Warp and click any empty cell to place the breaker wherever you need it!</span>
+          </div>
+        </div>
+
+        <p><strong>⚡ Tile Breakers:</strong></p>
+        <div class="breaker-legend-list">
+          <div class="legend-item">
+            <span class="breaker-pill pill-2">÷2</span>
+            <span><strong>Crimson Breaker (75%)</strong>: Divides tile by 2 into 2 pieces</span>
+          </div>
+          <div class="legend-item">
+            <span class="breaker-pill pill-4">÷4</span>
+            <span><strong>Gold Breaker (15%)</strong>: Divides tile by 4 into 4 pieces (cross formation)</span>
+          </div>
+          <div class="legend-item">
+            <span class="breaker-pill pill-8">÷8</span>
+            <span><strong>Cyan Breaker (10% BONUS!)</strong>: Detonates tile into 8 surrounding pieces (radial burst), pushing nearby tiles outward!</span>
+          </div>
+        </div>
+
+        <p>There is <strong>only one breaker tile at a time</strong> on the board coming randomly as in 2048, so the board never clutters with unused breakers!</p>
+
+        <div class="rule-highlight">
+          <strong>✨ Clear to Win:</strong>
+          When any target tile is reduced to <strong>16, 8, 4, or 2 (≤ 16)</strong>, it shatters and <strong>disappears completely from the board</strong>!
+        </div>
+
+        <p><strong>Ultimate Goal:</strong> Clear all target tiles to advance through the campaign from 4096 all the way to 65536!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Settings</h2>
+        <button class="icon-btn modal-close" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="selectGridSize">Board Grid Size:</label>
+          <select id="selectGridSize" class="form-select">
+            <option value="8" selected>8 × 8 (Optimal for 65536 & 8-Breaker)</option>
+            <option value="7">7 × 7 (Spacious)</option>
+            <option value="6">6 × 6 (Medium)</option>
+            <option value="5">5 × 5 (Compact)</option>
+            <option value="4">4 × 4 (Hardcore)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="selectStartLevel">Starting Campaign Tier:</label>
+          <select id="selectStartLevel" class="form-select">
+            <option value="4096" selected>Level 1: 4,096 (Beginner Friendly)</option>
+            <option value="8192">Level 2: 8,192 (Adventurer)</option>
+            <option value="16384">Level 3: 16,384 (Challenger)</option>
+            <option value="32768">Level 4: 32,768 (Master)</option>
+            <option value="65536">Level 5: 65,536 (Grandmaster Titan)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="selectBreakerSet">Breaker Tiles Available:</label>
+          <select id="selectBreakerSet" class="form-select">
+            <option value="3">3 Breakers (2, 4, 8)</option>
+            <option value="4">4 Breakers (2, 4, 8, 16)</option>
+          </select>
+        </div>
+
+        <label class="checkbox-group">
+          <input type="checkbox" id="toggleSoundSetting" checked>
+          <span>🔊 Enable Sound Effects</span>
+        </label>
+
+        <label class="checkbox-group">
+          <input type="checkbox" id="toggleDpad">
+          <span>Show On-Screen Virtual D-Pad</span>
+        </label>
+
+        <div class="settings-install-section" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; margin-bottom: 8px;">
+          <button id="settingsInstallBtn" type="button" class="btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; background: rgba(99, 102, 241, 0.25); border: 1px solid rgba(139, 92, 246, 0.5);">
+            <span>📲 Install App on This Device</span>
+          </button>
+          <div id="settingsInstallNote" style="font-size: 0.78rem; color: #94a3b8; text-align: center; margin-top: 6px;">
+            Local-first PWA: plays offline anywhere with zero network lag.
+          </div>
+        </div>
+
+        <button id="saveSettingsBtn" class="btn btn-primary" style="margin-top: 6px;">
+          Save & Apply
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Victory Modal -->
+  <div id="winModal" class="modal modal-win">
+    <div class="modal-content">
+      <h2 class="modal-title">🏆 LEVEL CLEARED!</h2>
+      <p id="winMessage" style="margin: 12px 0; color: #f8fafc; font-size: 1.1rem;">
+        Magnificent! You completely shattered this tier down to dust!
+      </p>
+      <div style="margin: 16px 0; font-size: 1rem; color: #94a3b8;">
+        Total Score: <strong id="winScore" style="color: #ffd600;">0</strong><br>
+        Moves Taken: <strong id="winMoves" style="color: #ffffff;">0</strong>
+      </div>
+      <button id="winNextLevelBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px; font-size: 1.05rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+        Next Level (<span id="winNextTarget">8192</span>) ▶
+      </button>
+      <button id="winPlayAgainBtn" class="btn" style="width: 100%; margin-top: 8px;">
+        Replay Level
+      </button>
+    </div>
+  </div>
+
+  <!-- Game Over Modal -->
+  <div id="gameOverModal" class="modal modal-gameover">
+    <div class="modal-content">
+      <h2 class="modal-title">GRIDLOCKED!</h2>
+      <p style="margin: 12px 0; color: #f8fafc; font-size: 1.05rem;">
+        The board is full and no breakers can reach a target tile!
+      </p>
+      <div style="margin: 16px 0; font-size: 1rem; color: #94a3b8;">
+        Final Score: <strong id="lossScore" style="color: #ef4444;">0</strong>
+      </div>
+      <button id="lossRetryBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+        Try Again
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Toast Notification -->
+  <div id="gameToast" class="game-toast"></div>
+
+  <!-- Game Scripts -->
+  <script src="js/audio.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/board.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

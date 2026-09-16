@@ -1,0 +1,165 @@
+/* Keyframe animations and transitions for 65536 */
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes impactShake {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  25% {
+    transform: scale(0.92) rotate(-2deg);
+    filter: brightness(1.8) drop-shadow(0 0 16px rgba(255, 255, 255, 0.9));
+  }
+  50% {
+    transform: scale(1.06) rotate(2deg);
+    filter: brightness(1.5) drop-shadow(0 0 12px rgba(255, 215, 0, 0.8));
+  }
+  75% {
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+@keyframes shatterDissolve {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(2) drop-shadow(0 0 20px #00e5ff);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.15);
+    filter: brightness(2.5) drop-shadow(0 0 30px #ffffff);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0);
+    filter: brightness(3);
+  }
+}
+
+@keyframes floatUpFade {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.7);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-12px) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-36px) scale(1);
+  }
+}
+
+@keyframes targetPulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.45), inset 0 0 12px rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.8), 0 0 45px rgba(99, 102, 241, 0.4), inset 0 0 18px rgba(255, 255, 255, 0.4);
+  }
+}
+
+@keyframes breakerBeacon {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px currentColor);
+  }
+  50% {
+    filter: drop-shadow(0 0 14px currentColor);
+  }
+}
+
+@keyframes boardShake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-4px, 2px); }
+  40% { transform: translate(4px, -2px); }
+  60% { transform: translate(-3px, -2px); }
+  80% { transform: translate(3px, 2px); }
+}
+
+@keyframes modalBackdropFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalContentZoom {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes smashGlowPulse {
+  0% {
+    box-shadow: 0 0 10px rgba(255, 214, 0, 0.7), inset 0 0 8px rgba(255, 214, 0, 0.3);
+    border-color: #ffd600;
+  }
+  100% {
+    box-shadow: 0 0 28px rgba(255, 214, 0, 1), inset 0 0 16px rgba(255, 214, 0, 0.6);
+    border-color: #ffffff;
+  }
+}
+
+@keyframes smashBadgeBounce {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes tileDenyShake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-6px, 0); }
+  40% { transform: translate(6px, 0); }
+  60% { transform: translate(-4px, 0); }
+  80% { transform: translate(4px, 0); }
+}
+
+.tile-new .tile-inner {
+  animation: popIn 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.tile-impact .tile-inner {
+  animation: impactShake 0.25s ease-out forwards;
+}
+
+.tile-eliminated .tile-inner {
+  animation: shatterDissolve 0.35s ease-out forwards;
+}
+
+.score-popup {
+  position: absolute;
+  top: 0;
+  right: 10px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #ffd600;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 10px rgba(255, 214, 0, 0.6);
+  pointer-events: none;
+  animation: floatUpFade 0.9s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  z-index: 100;
+}
