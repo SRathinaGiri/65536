@@ -59,6 +59,7 @@ class GameEngine {
     this.isWon = false;
     this.isGameOver = false;
     this.undoStack = [];
+    this.tileIdCounter = 1;
 
     // Place the starting target tile in the center
     const centerR = Math.floor(this.gridSize / 2);
@@ -765,15 +766,23 @@ class GameEngine {
       hammerCharges: this.hammerCharges,
       lastHammerScore: this.lastHammerScore,
       warpCharges: this.warpCharges,
-      lastWarpScore: this.lastWarpScore
+      lastWarpScore: this.lastWarpScore,
+      tileIdCounter: this.tileIdCounter
     };
   }
 
   loadState(state) {
-    this.grid = state.grid.map(row =>
-      row.map(cell => (cell ? { ...cell } : null))
-    );
     this.gridSize = state.gridSize || 8;
+    this.grid = state.grid.map((row, r) =>
+      row.map((cell, c) => {
+        if (!cell) return null;
+        return {
+          ...cell,
+          row: r,
+          col: c
+        };
+      })
+    );
     this.score = state.score || 0;
     this.moves = state.moves || 0;
     this.tilesShattered = state.tilesShattered || 0;
@@ -786,7 +795,46 @@ class GameEngine {
     this.lastHammerScore = state.lastHammerScore !== undefined ? state.lastHammerScore : Math.floor(this.score / 25000) * 25000;
     this.warpCharges = state.warpCharges !== undefined ? state.warpCharges : 1;
     this.lastWarpScore = state.lastWarpScore !== undefined ? state.lastWarpScore : Math.floor(this.score / 50000) * 50000;
+
+    // Auto-heal duplicate tile IDs and establish valid tileIdCounter
+    const existingIds = new Set();
+    let maxId = 0;
+    let needsReindexing = false;
+
+    this.grid.forEach(row => {
+      row.forEach(cell => {
+        if (!cell) return;
+        if (!cell.id || existingIds.has(cell.id)) {
+          needsReindexing = true;
+        } else {
+          existingIds.add(cell.id);
+          if (cell.id > maxId) maxId = cell.id;
+        }
+      });
+    });
+
+    if (needsReindexing || state.tileIdCounter === undefined) {
+      let nextId = 1;
+      this.grid.forEach(row => {
+        row.forEach(cell => {
+          if (cell) {
+            cell.id = nextId++;
+          }
+        });
+      });
+      this.tileIdCounter = nextId;
+    } else {
+      this.tileIdCounter = Math.max(state.tileIdCounter, maxId + 1);
+    }
+
+    // Auto-heal missing breaker: if no breaker exists and empty cells exist, spawn one
+    const breakers = this.grid.flat().filter(t => t && t.type === 'breaker');
+    if (breakers.length === 0 && !this.isWon && !this.isGameOver && this.getEmptyCells().length > 0) {
+      this.spawnRandomBreaker();
+    }
+
     this.undoStack = [];
+    this.saveState();
     this.emit('stateChange', this.getState());
   }
 

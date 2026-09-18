@@ -54,6 +54,7 @@ class BoardRenderer {
     // Keep track of existing tile DOM nodes by tile.id
     const currentTileElements = new Map();
     this.tileContainer.querySelectorAll('.tile').forEach(el => {
+      if (!el.dataset.id || el.classList.contains('tile-eliminated')) return;
       const id = parseInt(el.dataset.id, 10);
       currentTileElements.set(id, el);
     });
@@ -94,9 +95,11 @@ class BoardRenderer {
     currentTileElements.forEach((el, id) => {
       if (!activeTileIds.has(id)) {
         if (el.classList.contains('tile-target') && !el.classList.contains('tile-eliminated')) {
+          el.dataset.id = '';
           el.classList.add('tile-eliminated');
           setTimeout(() => el.remove(), 350);
         } else if (!el.classList.contains('tile-eliminated')) {
+          el.dataset.id = '';
           el.remove();
         }
       }
