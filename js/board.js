@@ -92,15 +92,41 @@ class BoardRenderer {
           inner.className = 'tile-inner';
           tileEl.appendChild(inner);
 
-          if (tile.isNew) {
-            tileEl.classList.add('tile-new');
+          const stepPercent = 100 / gridSize;
+          tileEl.style.width = `${stepPercent}%`;
+          tileEl.style.height = `${stepPercent}%`;
+
+          if (tile.isSpilling && tile.fromRow !== undefined && tile.fromCol !== undefined) {
+            // Fluid spill: start at the source shattered tile position
+            tileEl.classList.add('tile-spilling');
+            tileEl.style.transform = `translate(${tile.fromCol * 100}%, ${tile.fromRow * 100}%)`;
+            this.tileContainer.appendChild(tileEl);
+
+            // Set up classes and contents without overriding initial transform
+            this.updateTileElement(tileEl, tile, gridSize, true);
+
+            // Force reflow so the browser registers the initial source position
+            void tileEl.offsetWidth;
+
+            // Animate gliding from source tile to destination tile
+            const spillDelay = Math.min((tile.spillIndex || 0) * 16, 120);
+            setTimeout(() => {
+              tileEl.style.transform = `translate(${tile.col * 100}%, ${tile.row * 100}%)`;
+              setTimeout(() => {
+                tileEl.classList.remove('tile-spilling');
+              }, 340);
+            }, spillDelay);
+          } else {
+            if (tile.isNew) {
+              tileEl.classList.add('tile-new');
+            }
+            this.tileContainer.appendChild(tileEl);
+            this.updateTileElement(tileEl, tile, gridSize);
           }
-
-          this.tileContainer.appendChild(tileEl);
+        } else {
+          // Existing tile updating position & state
+          this.updateTileElement(tileEl, tile, gridSize);
         }
-
-        // Update classes and positioning
-        this.updateTileElement(tileEl, tile, gridSize);
       }
     }
 
@@ -119,12 +145,14 @@ class BoardRenderer {
     });
   }
 
-  updateTileElement(el, tile, gridSize) {
+  updateTileElement(el, tile, gridSize, skipTransform = false) {
     const inner = el.querySelector('.tile-inner');
 
     // Calculate position percentage
     const stepPercent = 100 / gridSize;
-    el.style.transform = `translate(${tile.col * 100}%, ${tile.row * 100}%)`;
+    if (!skipTransform) {
+      el.style.transform = `translate(${tile.col * 100}%, ${tile.row * 100}%)`;
+    }
     el.style.width = `${stepPercent}%`;
     el.style.height = `${stepPercent}%`;
 
@@ -143,8 +171,9 @@ class BoardRenderer {
         classNames += ' tile-immune';
       }
     }
-    if (tile.isNew) classNames += ' tile-new';
-    if (tile.justDivided) classNames += ' tile-impact';
+    if (tile.isNew && !tile.isSpilling) classNames += ' tile-new';
+    if (tile.isSpilling) classNames += ' tile-spilling';
+    if (tile.justDivided && !tile.isSpilling) classNames += ' tile-impact';
     el.className = classNames;
 
     // Format display content

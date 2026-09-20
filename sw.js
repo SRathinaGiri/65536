@@ -1,4 +1,4 @@
-const SW_VERSION = '1.22';
+const SW_VERSION = '1.23';
 const CACHE_NAME = `65536-game-v${SW_VERSION}`;
 const ASSETS_TO_CACHE = [
   './',

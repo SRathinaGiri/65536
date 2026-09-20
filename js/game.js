@@ -425,6 +425,10 @@ class GameEngine {
           this.grid[r][c].isNew = false;
           this.grid[r][c].justDivided = false;
           this.grid[r][c].isEliminated = false;
+          this.grid[r][c].isSpilling = false;
+          this.grid[r][c].fromRow = undefined;
+          this.grid[r][c].fromCol = undefined;
+          this.grid[r][c].spillIndex = undefined;
         }
       }
     }
@@ -530,9 +534,13 @@ class GameEngine {
                 // Fluid spill: pieces fill closest empty cells around collision point
                 // Solid tiles are completely stationary obstacles that fluid flows around!
                 const spillSpots = this.findFluidSpillSpots(nextR, nextC, piecesCount, this.grid);
-                spillSpots.forEach(spot => {
+                spillSpots.forEach((spot, idx) => {
                   const piece = this.addTile(spot.r, spot.c, newVal, 'target');
                   piece.justDivided = true;
+                  piece.isSpilling = true;
+                  piece.fromRow = nextR;
+                  piece.fromCol = nextC;
+                  piece.spillIndex = idx;
                   interactedTiles.add(piece.id);
                 });
 

@@ -2,7 +2,7 @@
 
 [![Play Online](https://img.shields.io/badge/Play%20Online-srathinagiri.github.io%2F65536-00f0ff?style=for-the-badge&logo=githubpages&logoColor=white)](https://srathinagiri.github.io/65536/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Local--First%20%26%20Offline-10b981?style=for-the-badge&logo=pwa&logoColor=white)](https://srathinagiri.github.io/65536/)
-[![Version](https://img.shields.io/badge/Version-v1.22-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
+[![Version](https://img.shields.io/badge/Version-v1.23-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 An addictive, tactical HTML5 Progressive Web App (PWA) that inverts the iconic **2048** mechanic on its head.
