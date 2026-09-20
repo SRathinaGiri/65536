@@ -348,40 +348,36 @@ class GameEngine {
     else if (slideDir === 'left') { fDr = 0; fDc = -1; }
     else if (slideDir === 'right') { fDr = 0; fDc = 1; }
 
-    const pDr = -fDc, pDc = fDr; // Perpendicular vector (90 deg flank)
+    const pDr = fDc, pDc = -fDr; // Perpendicular vector (90 deg clockwise flank)
 
-    // 8 distinct carrom deflection rays ordered by kinetic spray priority:
-    // 1. Forward lane (in-line with breaker impact)
-    // 2. Diagonal forward sprays (±45°)
-    // 3. Lateral flanks (±90°)
-    // 4. Backward ricochets (±135°)
-    // 5. Direct rebound (180°)
+    // Symmetrically balanced rays so all piece counts (2, 4, 8, 16) distribute evenly:
+    // 2 pieces  -> [diag_fwd_right, diag_fwd_left] (symmetrical forward V-split)
+    // 4 pieces  -> adds [diag_back_right, diag_back_left] (4-corner quadrant burst)
+    // 8 pieces  -> adds [forward, rebound_back, flank_right, flank_left] (full 8-way carrom explosion)
+    // 16 pieces -> all 8 rays get 2 pieces each (outer corridor + mid corridor)
     const rays = [
-      { name: 'forward', dr: fDr, dc: fDc },
       { name: 'diag_fwd_right', dr: fDr + pDr, dc: fDc + pDc },
-      { name: 'diag_fwd_left', dr: fDr - pDr, dc: fDc - pDc },
-      { name: 'flank_right', dr: pDr, dc: pDc },
-      { name: 'flank_left', dr: -pDr, dc: -pDc },
+      { name: 'diag_fwd_left',  dr: fDr - pDr, dc: fDc - pDc },
       { name: 'diag_back_right', dr: -fDr + pDr, dc: -fDc + pDc },
-      { name: 'diag_back_left', dr: -fDr - pDr, dc: -fDc - pDc },
-      { name: 'rebound_back', dr: -fDr, dc: -fDc }
+      { name: 'diag_back_left',  dr: -fDr - pDr, dc: -fDc - pDc },
+      { name: 'forward',        dr: fDr, dc: fDc },
+      { name: 'rebound_back',   dr: -fDr, dc: -fDc },
+      { name: 'flank_right',    dr: pDr, dc: pDc },
+      { name: 'flank_left',     dr: -pDr, dc: -pDc }
     ];
 
-    // Base impulse from breaker force
-    let baseDist = 1;
-    if (divisor >= 16) baseDist = 4;
-    else if (divisor >= 8) baseDist = 3;
-    else if (divisor >= 4) baseDist = 2;
-    else baseDist = 1;
-
-    // Piece mass & velocity physics (lower values move faster and slide further)
-    let speedBonus = 0;
-    if (newVal <= 32) speedBonus = 2; // Lightest coin -> flies furthest into open lanes
-    else if (newVal <= 64) speedBonus = 1;
-    else if (newVal <= 128) speedBonus = 0;
-    else speedBonus = -1; // Heavier pieces -> high inertia, settle closer
-
-    const maxTravel = Math.max(1, Math.min(this.gridSize - 1, baseDist + speedBonus));
+    // Carrom Coin Physics: All pieces (red/white/black or 32/256/1024) have equal mass!
+    // Travel distance depends ENTIRELY on striker force (breaker divisor), with zero tile weight penalty:
+    let maxTravel = 2;
+    if (divisor >= 16) {
+      maxTravel = this.gridSize - 1; // Full corridor sweep across board
+    } else if (divisor >= 8) {
+      maxTravel = Math.min(this.gridSize - 1, 5); // Explosive strike: up to 5 cells deep
+    } else if (divisor >= 4) {
+      maxTravel = Math.min(this.gridSize - 1, 3); // Solid strike: up to 3 cells deep
+    } else {
+      maxTravel = 2; // Gentle split: 1-2 cells
+    }
 
     // Phase 1: Carrom Raycasting
     // Cast each piece outward along its designated angular ray through open space
