@@ -142,14 +142,18 @@ Record, analyze, export, and showcase complete 65,536 games:
 
 Eliminates repetitive late-game cleanup when victory is mathematically assured:
 - **Glanceable Live Countdown Box**: Displayed directly in the Breaker banner above the board (`💥 Big Bang: 3 tiles`), dynamically updating as tiles are shattered.
-- **Titan Tile Guidance**: When large numbers ($\ge 2048$) remain, the badge displays `Split Titan`, prompting you to divide large monoliths before auto-clear unlocks.
-- **Active Ready Indicator**: Once critical mass is reached, the badge pulses with an energetic neon cyan glow (`💥 Big Bang: READY!`), alerting you that the next swipe will ignite the cascade victory!
+- **Two Distinct Phases**:
+  1. **Main Division Phase**: While active campaign tiles ($> 256$) remain on the board (e.g. 512, 1024, 2048, 4096), the HUD badge displays `💥 Big Bang: Split >256`. Big Bang remains locked so players experience the full strategic puzzle without premature level completions.
+  2. **Endgame Cleanup Phase**: Once all tiles are broken down to small fragments ($\le 256$), the badge displays a live countdown (`3 tiles`, `1 tile`). When remaining pieces mathematically cannot fill the grid ($\le 7$ tiles of 256 on $8\times 8$), it turns to `READY!` with an energetic neon cyan pulse!
 - **Interactive Hint**: Tap the Big Bang badge anytime to view a quick toast popup explaining current progress.
-- **Critical Mass Mathematics**:
-  - Tiles $\le 128$: Vanish in a single `÷8` hit ($0$ peak pieces).
-  - Tiles $256, 512, 1024$: Generate at most 8 pieces before subsequent hits eliminate them ($8$ peak pieces).
-  - Tiles $2048, 4096+$: Branch into $\ge 64$ pieces (active campaign challenges).
-  - Whenever $\sum \text{Peak8Pieces}(T) + 1 < \text{gridSize}^2$, grid overflow is physically impossible!
+- **Tile Expansion Mathematics**:
+  - Tiles $\le 16$: Eliminated immediately ($0$ pieces).
+  - Tiles $32$: Shatters into $\le 16$ on any breaker hit ($1$ piece).
+  - Tiles $64$: Branches into at most $2$ pieces before elimination.
+  - Tiles $128$: Branches into at most $4$ pieces before elimination.
+  - Tiles $256$: Branches into at most $8$ pieces before elimination.
+  - Tiles $\ge 512$: Active campaign tiles that must be divided before endgame cleanup.
+  - Whenever all tiles are $\le 256$ and $\sum \text{MaxPieces}(T) + 1 < \text{gridSize}^2$, grid overflow is physically impossible!
 - **Escalating Detonation Sequence**:
   - Explosions cascade **sequentially from the smallest tiles toward the largest tiles**.
   - Escalating synthesized pitch and increasing particle intensities build suspense.

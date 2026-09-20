@@ -754,37 +754,23 @@ class GameEngine {
     }
   }
 
-  // Peak 8-piece expansion potential before complete elimination (<= 16)
-  getPeak8Pieces(value) {
-    if (value <= 128) return 0; // Divided by 8: <= 16 -> eliminates immediately!
-    if (value <= 1024) return 8; // Divided by 8: <= 128, which eliminates on subsequent 8-hit
-    if (value <= 2048) return 64; // 8 * 8 = 64
-    return 512; // >= 4096
+  // Maximum expansion potential under any breaker before guaranteed elimination
+  getPeakPieces(value) {
+    if (value <= 16) return 0; // Eliminates immediately on any hit
+    if (value <= 32) return 1; // 32 / 2 = 16 -> eliminates immediately on any breaker (<=16)
+    if (value <= 64) return 2; // 64 / 2 = 32 (2 pieces, which then eliminate on next hit)
+    if (value <= 128) return 4; // 128 / 2 = 64 (2 pieces) -> 4 pieces of 32 -> eliminates
+    if (value <= 256) return 8; // 256 / 8 = 32 (8 pieces) or 256 / 2 -> 8 pieces -> eliminates
+    if (value <= 512) return 32; // 512 / 2 -> up to 32 pieces
+    if (value <= 1024) return 64; // 1024 / 2 -> up to 64 pieces
+    return 128; // >= 2048
   }
 
   // Check if remaining target tiles can never possibly overflow or fill the grid
   checkCriticalMass() {
-    const targets = [];
-    for (let r = 0; r < this.gridSize; r++) {
-      for (let c = 0; c < this.gridSize; c++) {
-        const cell = this.grid[r][c];
-        if (cell && cell.type === 'target') {
-          targets.push(cell);
-        }
-      }
-    }
-
-    // If no targets remain, level is already won normally
-    if (targets.length === 0) return false;
-
-    const totalCells = this.gridSize * this.gridSize;
-    let totalMaxPieces = 1; // 1 for the breaker tile
-
-    for (const t of targets) {
-      totalMaxPieces += this.getPeak8Pieces(t.value);
-    }
-
-    return totalMaxPieces < totalCells;
+    if (this.supernovaFinishing === false) return false;
+    const status = this.getBigBangStatus();
+    return !!(status && status.ready);
   }
 
   // Get comprehensive status of Supernova Big Bang Finishing
@@ -812,18 +798,33 @@ class GameEngine {
 
     const totalCells = this.gridSize * this.gridSize;
     let totalMaxPieces = 1; // 1 for the breaker tile
-    let hasTitan = false;
-    let titanVal = 0;
+    let hasLargeTile = false;
+    let maxVal = 0;
 
     for (const t of targets) {
-      const peak = this.getPeak8Pieces(t.value);
-      totalMaxPieces += peak;
-      if (peak >= totalCells - 1) {
-        hasTitan = true;
-        if (t.value > titanVal) titanVal = t.value;
+      if (t.value > maxVal) maxVal = t.value;
+      if (t.value > 256) {
+        hasLargeTile = true;
       }
+      totalMaxPieces += this.getPeakPieces(t.value);
     }
 
+    // Phase 1: Main Division Phase (tiles > 256 remain on board)
+    // Big Bang is strictly an endgame cleanup mechanic and will not activate while large tiles exist
+    if (hasLargeTile) {
+      const maxValFormatted = maxVal >= 1024 ? `${Math.round(maxVal / 1024)}K` : maxVal;
+      return {
+        enabled: true,
+        ready: false,
+        count: 'Split',
+        text: 'Split >256',
+        maxVal,
+        hasTitan: true,
+        tooltip: `Break tiles down to ≤ 256 (highest is ${maxValFormatted}). Big Bang auto-clears once only small pieces remain!`
+      };
+    }
+
+    // Phase 2: Endgame Cleanup Phase (all remaining tiles on board are <= 256)
     if (totalMaxPieces < totalCells) {
       return {
         enabled: true,
@@ -836,22 +837,10 @@ class GameEngine {
       };
     }
 
+    // When all tiles are <= 256, excess is driven by 256 tiles (each contributes at most 8 pieces)
     const excess = totalMaxPieces - (totalCells - 1);
-
-    if (hasTitan) {
-      return {
-        enabled: true,
-        ready: false,
-        count: 'Split',
-        text: 'Split Titan',
-        excess,
-        hasTitan: true,
-        titanVal,
-        tooltip: `Tiles ≥ 2048 (${titanVal}) must be divided first before Big Bang can activate!`
-      };
-    }
-
     const tilesToReduce = Math.max(1, Math.ceil(excess / 8));
+
     return {
       enabled: true,
       ready: false,
@@ -859,7 +848,7 @@ class GameEngine {
       text: `${tilesToReduce} ${tilesToReduce === 1 ? 'tile' : 'tiles'}`,
       excess,
       hasTitan: false,
-      tooltip: `Reduce or shatter ${tilesToReduce} more ${tilesToReduce === 1 ? 'tile' : 'tiles'} to ignite Big Bang!`
+      tooltip: `Shatter ${tilesToReduce} more ${tilesToReduce === 1 ? 'tile' : 'tiles'} to ignite Supernova Big Bang Finishing!`
     };
   }
 

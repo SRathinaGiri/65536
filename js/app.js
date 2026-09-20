@@ -488,12 +488,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const status = game.getBigBangStatus();
       if (!status || !status.enabled) return;
 
-      if (status.ready) {
+      if (status.tooltip) {
+        showToast(status.tooltip);
+      } else if (status.ready) {
         showToast('💥 Supernova Big Bang is READY! Any swipe will ignite the cascade victory!');
-      } else if (status.hasTitan) {
-        showToast(`💥 Big Bang: Split tiles ≥ 2048 (${status.titanVal || 'large'}) first before auto-clear can activate!`);
-      } else if (typeof status.count === 'number') {
-        showToast(`💥 Big Bang: Reduce ${status.count} more ${status.count === 1 ? 'tile' : 'tiles'} (reach ≤ 7) to ignite!`);
       } else {
         showToast('💥 Big Bang Finishing: Clears the board when grid overflow becomes impossible!');
       }
