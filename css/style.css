@@ -1452,6 +1452,12 @@ body.warp-targeting .tile {
   animation: ghostPulse 1s infinite alternate ease-in-out;
 }
 
+/* Dim original position of displaced tiles during move preview */
+.tile.tile-displaced-origin .tile-inner {
+  opacity: 0.22 !important;
+  filter: grayscale(0.6) !important;
+}
+
 /* Tile marked for guaranteed elimination blinks */
 .tile.tile-elimination-blink .tile-inner {
   animation: eliminationTileBlink 0.8s infinite ease-in-out !important;

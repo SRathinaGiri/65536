@@ -2,7 +2,7 @@
 
 [![Play Online](https://img.shields.io/badge/Play%20Online-srathinagiri.github.io%2F65536-00f0ff?style=for-the-badge&logo=githubpages&logoColor=white)](https://srathinagiri.github.io/65536/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Local--First%20%26%20Offline-10b981?style=for-the-badge&logo=pwa&logoColor=white)](https://srathinagiri.github.io/65536/)
-[![Version](https://img.shields.io/badge/Version-v1.28.4-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
+[![Version](https://img.shields.io/badge/Version-v1.30-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 An addictive, tactical HTML5 Progressive Web App (PWA) that inverts the iconic **2048** mechanic on its head.
@@ -48,8 +48,8 @@ Built strictly as a **Local-First PWA**:
 ### 3. 🎯 Reverse Division Mechanics (Fission Mode)
 When the breaker collides with a target number tile:
 - The target tile is divided by the breaker value ($T / B$).
-- **Chain Division**: The tile fissions into multiple smaller quotient pieces ($2$ pieces for $\div 2$, $4$ pieces for $\div 4$, $8$ pieces for $\div 8$).
-- **Carrom Board Kinetic Scatter Dynamics**: Splintered pieces radiate outward along momentum rays through open board corridors like carrom coins. Solid tiles remain immovable obstacles that deflect and stop sliding pieces!
+- **Chain Division**: The tile fissions into multiple smaller quotient pieces ($2$ pieces for $\div 2$, $4$ pieces for $\div 4$, $8$ pieces for $\div 8$, $16$ pieces for $\div 16$).
+- **Chaotic Shockwave Explosions**: Breaker strikes generate explosive shockwaves that push surrounding solid tiles outward into open board corridors!
 - **Elimination Threshold**: Any target reduced to **$\le 16$** is completely shattered and disappears from the grid!
 - If the target tile value is not divisible without a remainder, it is reduced to the nearest lower power of two.
 
@@ -58,15 +58,14 @@ When the breaker collides with a target number tile:
 | Breaker | Color | Spawn Rate | Fission Behavior |
 | :---: | :---: | :---: | :--- |
 | **÷2** | Crimson Red | **75%** | Divides target tile by 2 into **2 equal pieces** in the immediate vicinity. |
-| **÷4** | Gold Amber | **15%** | Divides target tile by 4 into **4 pieces** with medium directional momentum. |
-| **÷8** | Cyan Neon | **10% (BONUS!)** | High-energy explosive strike! Projects **8 pieces** across open corridors with **Carrom Board Kinetic Scatter**! |
+| **÷4** | Gold Amber | **15%** | Divides target tile by 4 into **4 pieces** along cardinal directions, pushing solid tiles outward. |
+| **÷8** | Cyan Neon | **10% (BONUS!)** | High-energy explosive strike! Generates an 8-way radial shockwave that violently shoves solid tiles across the board! |
 
-### 5. 🎱 Carrom Board Kinetic Scatter (v1.28)
-- **Breaker Striking Force & Momentum**: Just like real carrom where all coins (white, black, red/queen) have equal mass, fragments in 65536 move based purely on **striker force** (`÷2`, `÷4`, `÷8`, `÷16`) with zero weight penalty on higher values! A 256, 512, or 1024 disperses just as far as a 32 or 64.
-- **Dynamic Symmetrical Rays**: Breaker strikes project fragments through open board corridors using balanced 8-directional deflection rays (symmetrical forward V-split for 2 pieces, 4-corner quadrant burst for 4 pieces, and 360° explosive dispersion for 8+ pieces).
-- **Immovable Obstacles**: Existing numbers remain 100% fixed in place. Pieces slide through open corridors and bank against walls or solid tiles.
-- **Dynamic Deceleration Glide**: Newly divided fragments visually glide across the grid with realistic carrom friction deceleration (`cubic-bezier(0.16, 0.95, 0.3, 1.05)`).
-- **100% Ghost Preview Support**: The scatter rays are calculated deterministically along the striker's trajectory, so the aim laser and ghost preview show the exact landing spots before you swipe!
+### 5. 💥 Chaotic Shockwave Explosion Dynamics (v1.30)
+- **Kinetic Tile Displacement (`pushTileOutward`)**: Unlike stationary models where solid tiles act as static obstacles, explosions violently displace neighboring solid tiles outward along blast vectors.
+- **Dynamic Board Scrambling**: Pushing solid numbers into open corridors breaks up clustered outer membranes ("onion peeling"), preventing mindless repetitive swiping and demanding deliberate, tactical planning.
+- **Full Move Preview Support**: Both newly divided quotient pieces and displaced solid tiles (with cyan dashed borders and directional movement arrows `▲`, `▼`, `◀`, `▶`) are rendered in real time.
+- **Synchronized Alternating Flips**: Target collision cells and breaker starting cells cleanly alternate between Before and After states on a 1.6s lockstep cycle with zero overlapping numbers.
 
 ### 5. ✨ Tile Elimination Threshold
 - When any target tile is reduced to **16, 8, 4, or 2** ($\le 16$), it shatters into sparkling particles and **completely disappears from the board**.

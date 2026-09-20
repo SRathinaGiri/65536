@@ -205,8 +205,8 @@ class BoardRenderer {
       this.ghostContainer.innerHTML = '';
     }
     if (this.tileContainer) {
-      this.tileContainer.querySelectorAll('.tile-target-locked, .tile-target-secondary, .tile-elimination-blink, .tile-target-dividing, .tile-breaker-dividing').forEach(el => {
-        el.classList.remove('tile-target-locked', 'tile-target-secondary', 'tile-elimination-blink', 'tile-target-dividing', 'tile-breaker-dividing');
+      this.tileContainer.querySelectorAll('.tile-target-locked, .tile-target-secondary, .tile-elimination-blink, .tile-target-dividing, .tile-breaker-dividing, .tile-displaced-origin').forEach(el => {
+        el.classList.remove('tile-target-locked', 'tile-target-secondary', 'tile-elimination-blink', 'tile-target-dividing', 'tile-breaker-dividing', 'tile-displaced-origin');
         el.style.removeProperty('--target-lock-color');
         el.style.removeProperty('--secondary-target-color');
       });
@@ -513,8 +513,19 @@ class BoardRenderer {
 
         const symbol = dirSymbols[d] || '';
 
-        // Render fluid spill pieces in preview
+        // 1. Render newly divided quotient pieces
         const resultantTiles = sim.projectedTiles.filter(t => t.isNewPiece);
+
+        // 2. Displaced existing solid tiles pushed outward by the shockwave explosion
+        const displacedTiles = sim.projectedTiles.filter(t => !t.isNewPiece && t.wasPushed);
+
+        // Dim original positions of displaced tiles so they don't visually clash with preview
+        displacedTiles.forEach(t => {
+          if (t.id) {
+            const el = this.tileContainer.querySelector(`.tile[data-id="${t.id}"]`);
+            if (el) el.classList.add('tile-displaced-origin');
+          }
+        });
 
         resultantTiles.forEach(tile => {
           const cellKey = `${tile.row},${tile.col}`;
@@ -567,6 +578,35 @@ class BoardRenderer {
           inner.className = 'ghost-inner';
           inner.innerHTML = `
             <span class="ghost-dir-badge">${symbol}</span>
+            <span class="tile-number">${tile.value.toLocaleString()}</span>
+          `;
+          ghost.appendChild(inner);
+          this.ghostContainer.appendChild(ghost);
+        });
+
+        // Render displaced existing tiles (e.g. solid tile pushed into open corridor)
+        displacedTiles.forEach(tile => {
+          const cellKey = `${tile.row},${tile.col}`;
+          if (renderedCells.has(cellKey)) return;
+          renderedCells.add(cellKey);
+
+          let moveSymbol = symbol;
+          if (tile.pushDc > 0) moveSymbol = '▶';
+          else if (tile.pushDc < 0) moveSymbol = '◀';
+          else if (tile.pushDr > 0) moveSymbol = '▼';
+          else if (tile.pushDr < 0) moveSymbol = '▲';
+
+          const ghost = document.createElement('div');
+          ghost.className = `ghost-preview-tile val-${tile.value} ghost-displaced-piece`;
+          ghost.style.left = `${tile.col * stepPercent}%`;
+          ghost.style.top = `${tile.row * stepPercent}%`;
+          ghost.style.width = `${stepPercent}%`;
+          ghost.style.height = `${stepPercent}%`;
+
+          const inner = document.createElement('div');
+          inner.className = 'ghost-inner';
+          inner.innerHTML = `
+            <span class="ghost-dir-badge">${moveSymbol}</span>
             <span class="tile-number">${tile.value.toLocaleString()}</span>
           `;
           ghost.appendChild(inner);

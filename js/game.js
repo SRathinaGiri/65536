@@ -328,143 +328,40 @@ class GameEngine {
     return emptyCells[0];
   }
 
-  // Carrom Board Kinetic Scatter Fission:
-  // Disperses splintered pieces outward along angular momentum rays through open cells.
-  // Higher-power breakers (÷4, ÷8, ÷16) project pieces further across open lanes.
-  // Lighter pieces (<=32, 64) carry more velocity and slide deeper, while heavier pieces (>=256) settle closer.
-  // Solid tiles remain stationary obstacles that deflect and stop sliding pieces.
-  findFluidSpillSpots(centerR, centerC, count, grid = this.grid, slideDir = 'right', divisor = 2, newVal = 32) {
-    const spots = [];
-    const claimed = new Set();
-    const isFree = (r, c) => {
-      if (r < 0 || r >= this.gridSize || c < 0 || c >= this.gridSize) return false;
-      return grid[r][c] === null && !claimed.has(`${r},${c}`);
-    };
+  pushTileOutward(fromR, fromC, dr, dc, grid = this.grid) {
+    const tileToPush = grid[fromR][fromC];
+    if (!tileToPush) return null;
 
-    // Forward vector from breaker impact momentum
-    let fDr = 0, fDc = 1;
-    if (slideDir === 'up') { fDr = -1; fDc = 0; }
-    else if (slideDir === 'down') { fDr = 1; fDc = 0; }
-    else if (slideDir === 'left') { fDr = 0; fDc = -1; }
-    else if (slideDir === 'right') { fDr = 0; fDc = 1; }
+    let testR = fromR + dr;
+    let testC = fromC + dc;
+    let targetSpot = null;
 
-    const pDr = fDc, pDc = -fDr; // Perpendicular vector (90 deg clockwise flank)
-
-    // Symmetrically balanced rays so all piece counts (2, 4, 8, 16) distribute evenly:
-    // 2 pieces  -> [diag_fwd_right, diag_fwd_left] (symmetrical forward V-split)
-    // 4 pieces  -> adds [diag_back_right, diag_back_left] (4-corner quadrant burst)
-    // 8 pieces  -> adds [forward, rebound_back, flank_right, flank_left] (full 8-way carrom explosion)
-    // 16 pieces -> all 8 rays get 2 pieces each (outer corridor + mid corridor)
-    const rays = [
-      { name: 'diag_fwd_right', dr: fDr + pDr, dc: fDc + pDc },
-      { name: 'diag_fwd_left',  dr: fDr - pDr, dc: fDc - pDc },
-      { name: 'diag_back_right', dr: -fDr + pDr, dc: -fDc + pDc },
-      { name: 'diag_back_left',  dr: -fDr - pDr, dc: -fDc - pDc },
-      { name: 'forward',        dr: fDr, dc: fDc },
-      { name: 'rebound_back',   dr: -fDr, dc: -fDc },
-      { name: 'flank_right',    dr: pDr, dc: pDc },
-      { name: 'flank_left',     dr: -pDr, dc: -pDc }
-    ];
-
-    // Carrom Coin Physics: All pieces (red/white/black or 32/256/1024) have equal mass!
-    // Travel distance depends ENTIRELY on striker force (breaker divisor), with zero tile weight penalty:
-    let maxTravel = 2;
-    if (divisor >= 16) {
-      maxTravel = this.gridSize - 1; // Full corridor sweep across board
-    } else if (divisor >= 8) {
-      maxTravel = Math.min(this.gridSize - 1, 5); // Explosive strike: up to 5 cells deep
-    } else if (divisor >= 4) {
-      maxTravel = Math.min(this.gridSize - 1, 3); // Solid strike: up to 3 cells deep
-    } else {
-      maxTravel = 2; // Gentle split: 1-2 cells
+    while (testR >= 0 && testR < this.gridSize && testC >= 0 && testC < this.gridSize) {
+      if (grid[testR][testC] === null) {
+        targetSpot = { r: testR, c: testC };
+        break;
+      }
+      testR += dr;
+      testC += dc;
     }
 
-    // Phase 1: Carrom Raycasting
-    // Cast each piece outward along its designated angular ray through open space
-    for (let i = 0; i < count; i++) {
-      const ray = rays[i % rays.length];
-      let bestCell = null;
-      let r = centerR;
-      let c = centerC;
-
-      for (let step = 1; step <= maxTravel; step++) {
-        r += ray.dr;
-        c += ray.dc;
-        if (r < 0 || r >= this.gridSize || c < 0 || c >= this.gridSize) break;
-        // Solid tile acts as an impassable obstacle stopping the slide
-        if (grid[r][c] !== null) break;
-        if (!claimed.has(`${r},${c}`)) {
-          bestCell = { r, c };
-        }
-      }
-
-      if (bestCell) {
-        claimed.add(`${bestCell.r},${bestCell.c}`);
-        spots.push(bestCell);
-      }
+    if (!targetSpot) {
+      targetSpot = this.findNearestEmptyCell(fromR, fromC, grid);
     }
 
-    // Phase 2: Natural Carrom Deflection & Local Fallback
-    // If rays were blocked by obstacles or board borders, fill nearest accessible empty cells
-    if (spots.length < count) {
-      // First check the epicenter cell itself if free
-      if (isFree(centerR, centerC)) {
-        claimed.add(`${centerR},${centerC}`);
-        spots.push({ r: centerR, c: centerC });
+    if (targetSpot) {
+      grid[targetSpot.r][targetSpot.c] = tileToPush;
+      tileToPush.row = targetSpot.r;
+      tileToPush.col = targetSpot.c;
+      if (grid !== this.grid) {
+        tileToPush.wasPushed = true;
+        tileToPush.pushDr = targetSpot.r - fromR;
+        tileToPush.pushDc = targetSpot.c - fromC;
       }
-
-      if (spots.length < count) {
-        const queue = [{ r: centerR, c: centerC, dist: 0 }];
-        const visited = Array.from({ length: this.gridSize }, () => Array(this.gridSize).fill(false));
-        if (centerR >= 0 && centerR < this.gridSize && centerC >= 0 && centerC < this.gridSize) {
-          visited[centerR][centerC] = true;
-        }
-        const allDirs = [
-          [-1, 0], [1, 0], [0, -1], [0, 1],
-          [-1, -1], [-1, 1], [1, -1], [1, 1]
-        ];
-
-        while (queue.length > 0 && spots.length < count) {
-          queue.sort((a, b) => a.dist - b.dist);
-          const curr = queue.shift();
-
-          if (isFree(curr.r, curr.c)) {
-            claimed.add(`${curr.r},${curr.c}`);
-            spots.push({ r: curr.r, c: curr.c });
-            if (spots.length >= count) break;
-          }
-
-          for (const [dr, dc] of allDirs) {
-            const nr = curr.r + dr;
-            const nc = curr.c + dc;
-            if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize && !visited[nr][nc]) {
-              visited[nr][nc] = true;
-              if (grid[nr][nc] === null) {
-                queue.push({
-                  r: nr,
-                  c: nc,
-                  dist: Math.hypot(nr - centerR, nc - centerC)
-                });
-              }
-            }
-          }
-        }
-      }
+      grid[fromR][fromC] = null;
+      return targetSpot;
     }
-
-    // Phase 3: Absolute board safety sweep (if board was heavily partitioned)
-    if (spots.length < count) {
-      for (let r = 0; r < this.gridSize && spots.length < count; r++) {
-        for (let c = 0; c < this.gridSize && spots.length < count; c++) {
-          if (isFree(r, c)) {
-            claimed.add(`${r},${c}`);
-            spots.push({ r, c });
-          }
-        }
-      }
-    }
-
-    return spots;
+    return null;
   }
 
   spawnRandomBreaker() {
@@ -674,23 +571,144 @@ class GameEngine {
                 // Shatter target tile at collision cell: it becomes empty
                 this.grid[nextR][nextC] = null;
 
-                // Carrom Board Kinetic Scatter: pieces spray outward along momentum rays through open cells!
-                // Solid tiles act as stationary obstacles (carrom coins) that deflect sliding pieces!
-                const spillSpots = this.findFluidSpillSpots(nextR, nextC, piecesCount, this.grid, direction, divisor, newVal);
-                spillSpots.forEach((spot, idx) => {
-                  const piece = this.addTile(spot.r, spot.c, newVal, 'target');
-                  piece.justDivided = true;
-                  piece.isSpilling = true;
-                  piece.fromRow = nextR;
-                  piece.fromCol = nextC;
-                  piece.spillIndex = idx;
-                  interactedTiles.add(piece.id);
-                });
+                if (divisor === 8) {
+                  // Breaker 8: 8 pieces in all 8 surrounding cells with kinetic shockwaves
+                  const surroundingDirs8 = [
+                    [-1, -1], [-1, 0], [-1, 1],
+                    [0, -1],           [0, 1],
+                    [1, -1],  [1, 0],  [1, 1]
+                  ];
+                  surroundingDirs8.forEach(([dr, dc]) => {
+                    const nr = nextR + dr;
+                    const nc = nextC + dc;
+                    if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
+                      if (this.grid[nr][nc] !== null) {
+                        this.pushTileOutward(nr, nc, dr, dc);
+                      }
+                      if (this.grid[nr][nc] === null) {
+                        const piece = this.addTile(nr, nc, newVal, 'target');
+                        piece.justDivided = true;
+                        interactedTiles.add(piece.id);
+                      } else {
+                        const spot = this.findNearestEmptyCell(nextR, nextC);
+                        if (spot) {
+                          const piece = this.addTile(spot.r, spot.c, newVal, 'target');
+                          piece.justDivided = true;
+                          interactedTiles.add(piece.id);
+                        }
+                      }
+                    } else {
+                      const spot = this.findNearestEmptyCell(nextR, nextC);
+                      if (spot) {
+                        const piece = this.addTile(spot.r, spot.c, newVal, 'target');
+                        piece.justDivided = true;
+                        interactedTiles.add(piece.id);
+                      }
+                    }
+                  });
+                  this.score += prevVal * 8;
+                  this.tilesShattered += 1;
+                  interactionData.isBonus8 = true;
+                } else if (divisor === 4) {
+                  // Breaker 4: 4 pieces in 4 cardinal cross directions
+                  const crossDirs4 = [
+                    [-1, 0], [1, 0], [0, -1], [0, 1]
+                  ];
+                  crossDirs4.forEach(([dr, dc]) => {
+                    const nr = nextR + dr;
+                    const nc = nextC + dc;
+                    if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
+                      if (this.grid[nr][nc] !== null) {
+                        this.pushTileOutward(nr, nc, dr, dc);
+                      }
+                      if (this.grid[nr][nc] === null) {
+                        const piece = this.addTile(nr, nc, newVal, 'target');
+                        piece.justDivided = true;
+                        interactedTiles.add(piece.id);
+                      } else {
+                        const spot = this.findNearestEmptyCell(nextR, nextC);
+                        if (spot) {
+                          const piece = this.addTile(spot.r, spot.c, newVal, 'target');
+                          piece.justDivided = true;
+                          interactedTiles.add(piece.id);
+                        }
+                      }
+                    } else {
+                      const spot = this.findNearestEmptyCell(nextR, nextC);
+                      if (spot) {
+                        const piece = this.addTile(spot.r, spot.c, newVal, 'target');
+                        piece.justDivided = true;
+                        interactedTiles.add(piece.id);
+                      }
+                    }
+                  });
+                  this.score += prevVal * 4;
+                  this.tilesShattered += 1;
+                } else if (divisor === 16) {
+                  // Breaker 16: 16 pieces
+                  const surroundingDirs16 = [
+                    [-1, -1], [-1, 0], [-1, 1],
+                    [0, -1],           [0, 1],
+                    [1, -1],  [1, 0],  [1, 1],
+                    [-2, 0], [2, 0], [0, -2], [0, 2],
+                    [-2, -1], [-2, 1], [2, -1], [2, 1]
+                  ];
+                  surroundingDirs16.forEach(([dr, dc]) => {
+                    const nr = nextR + dr;
+                    const nc = nextC + dc;
+                    if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
+                      if (this.grid[nr][nc] !== null) {
+                        this.pushTileOutward(nr, nc, dr, dc);
+                      }
+                      if (this.grid[nr][nc] === null) {
+                        const piece = this.addTile(nr, nc, newVal, 'target');
+                        piece.justDivided = true;
+                        interactedTiles.add(piece.id);
+                      } else {
+                        const spot = this.findNearestEmptyCell(nextR, nextC);
+                        if (spot) {
+                          const piece = this.addTile(spot.r, spot.c, newVal, 'target');
+                          piece.justDivided = true;
+                          interactedTiles.add(piece.id);
+                        }
+                      }
+                    } else {
+                      const spot = this.findNearestEmptyCell(nextR, nextC);
+                      if (spot) {
+                        const piece = this.addTile(spot.r, spot.c, newVal, 'target');
+                        piece.justDivided = true;
+                        interactedTiles.add(piece.id);
+                      }
+                    }
+                  });
+                  this.score += prevVal * 16;
+                  this.tilesShattered += 1;
+                  interactionData.isBonus16 = true;
+                } else {
+                  // Breaker 2: 2 pieces (value ÷ 2)
+                  numberTile.row = nextR;
+                  numberTile.col = nextC;
+                  numberTile.value = newVal;
+                  numberTile.justDivided = true;
+                  this.grid[nextR][nextC] = numberTile;
+                  interactedTiles.add(numberTile.id);
 
-                this.score += prevVal * divisor;
-                this.tilesShattered += 1;
-                if (divisor === 8) interactionData.isBonus8 = true;
-                if (divisor === 16) interactionData.isBonus16 = true;
+                  let splitSpot = null;
+                  if (this.grid[curR][curC] === null && (curR !== nextR || curC !== nextC)) {
+                    splitSpot = { r: curR, c: curC };
+                  } else {
+                    splitSpot = this.findNearestEmptyCell(nextR, nextC);
+                  }
+
+                  if (splitSpot) {
+                    const secondTile = this.addTile(splitSpot.r, splitSpot.c, newVal, 'target');
+                    secondTile.justDivided = true;
+                    interactedTiles.add(secondTile.id);
+                  }
+
+                  this.score += prevVal * 2;
+                  this.tilesShattered += 1;
+                }
               }
 
               interactions.push(interactionData);
@@ -1171,20 +1189,106 @@ class GameEngine {
               if (willEliminate) {
                 simGrid[nextR][nextC] = null;
               } else {
-                // Shatter target tile at collision cell: it becomes empty
-                simGrid[nextR][nextC] = null;
-
-                // Carrom Board Kinetic Scatter preview: pieces spray along momentum rays
-                const spillSpots = this.findFluidSpillSpots(nextR, nextC, piecesCount, simGrid, direction, divisor, newVal);
-                spillSpots.forEach(spot => {
-                  simGrid[spot.r][spot.c] = {
-                    row: spot.r,
-                    col: spot.c,
-                    value: newVal,
-                    type: 'target',
-                    isNewPiece: true
-                  };
-                });
+                if (divisor === 8) {
+                  simGrid[nextR][nextC] = null;
+                  const surroundingDirs8 = [
+                    [-1, -1], [-1, 0], [-1, 1],
+                    [0, -1],           [0, 1],
+                    [1, -1],  [1, 0],  [1, 1]
+                  ];
+                  surroundingDirs8.forEach(([dr, dc]) => {
+                    const nr = nextR + dr;
+                    const nc = nextC + dc;
+                    if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
+                      if (simGrid[nr][nc] !== null) {
+                        this.pushTileOutward(nr, nc, dr, dc, simGrid);
+                      }
+                      if (simGrid[nr][nc] === null) {
+                        simGrid[nr][nc] = { row: nr, col: nc, value: newVal, type: 'target', isNewPiece: true };
+                      } else {
+                        const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
+                        if (spot) {
+                          simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
+                        }
+                      }
+                    } else {
+                      const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
+                      if (spot) {
+                        simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
+                      }
+                    }
+                  });
+                } else if (divisor === 4) {
+                  simGrid[nextR][nextC] = null;
+                  const crossDirs4 = [
+                    [-1, 0], [1, 0], [0, -1], [0, 1]
+                  ];
+                  crossDirs4.forEach(([dr, dc]) => {
+                    const nr = nextR + dr;
+                    const nc = nextC + dc;
+                    if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
+                      if (simGrid[nr][nc] !== null) {
+                        this.pushTileOutward(nr, nc, dr, dc, simGrid);
+                      }
+                      if (simGrid[nr][nc] === null) {
+                        simGrid[nr][nc] = { row: nr, col: nc, value: newVal, type: 'target', isNewPiece: true };
+                      } else {
+                        const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
+                        if (spot) {
+                          simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
+                        }
+                      }
+                    } else {
+                      const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
+                      if (spot) {
+                        simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
+                      }
+                    }
+                  });
+                } else if (divisor === 16) {
+                  simGrid[nextR][nextC] = null;
+                  const surroundingDirs16 = [
+                    [-1, -1], [-1, 0], [-1, 1],
+                    [0, -1],           [0, 1],
+                    [1, -1],  [1, 0],  [1, 1],
+                    [-2, 0], [2, 0], [0, -2], [0, 2],
+                    [-2, -1], [-2, 1], [2, -1], [2, 1]
+                  ];
+                  surroundingDirs16.forEach(([dr, dc]) => {
+                    const nr = nextR + dr;
+                    const nc = nextC + dc;
+                    if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
+                      if (simGrid[nr][nc] !== null) {
+                        this.pushTileOutward(nr, nc, dr, dc, simGrid);
+                      }
+                      if (simGrid[nr][nc] === null) {
+                        simGrid[nr][nc] = { row: nr, col: nc, value: newVal, type: 'target', isNewPiece: true };
+                      } else {
+                        const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
+                        if (spot) {
+                          simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
+                        }
+                      }
+                    } else {
+                      const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
+                      if (spot) {
+                        simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
+                      }
+                    }
+                  });
+                } else {
+                  // Breaker 2
+                  simGrid[nextR][nextC] = { row: nextR, col: nextC, value: newVal, type: 'target', isNewPiece: true };
+                  let splitSpot = null;
+                  if (simGrid[curR][curC] === null && (curR !== nextR || curC !== nextC)) {
+                    splitSpot = { r: curR, c: curC };
+                  } else {
+                    splitSpot = this.findNearestEmptyCell(nextR, nextC, simGrid);
+                  }
+                  if (splitSpot) {
+                    simGrid[splitSpot.r][splitSpot.c] = { row: splitSpot.r, col: splitSpot.c, value: newVal, type: 'target', isNewPiece: true };
+                  }
+                }
               }
             }
             break;
