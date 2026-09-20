@@ -2,7 +2,7 @@
 
 [![Play Online](https://img.shields.io/badge/Play%20Online-srathinagiri.github.io%2F65536-00f0ff?style=for-the-badge&logo=githubpages&logoColor=white)](https://srathinagiri.github.io/65536/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Local--First%20%26%20Offline-10b981?style=for-the-badge&logo=pwa&logoColor=white)](https://srathinagiri.github.io/65536/)
-[![Version](https://img.shields.io/badge/Version-v1.28-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
+[![Version](https://img.shields.io/badge/Version-v1.29-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 An addictive, tactical HTML5 Progressive Web App (PWA) that inverts the iconic **2048** mechanic on its head.
@@ -61,9 +61,10 @@ When the breaker collides with a target number tile:
 | **÷4** | Gold Amber | **15%** | Divides target tile by 4 into **4 pieces** with medium directional momentum. |
 | **÷8** | Cyan Neon | **10% (BONUS!)** | High-energy explosive strike! Projects **8 pieces** across open corridors with **Carrom Board Kinetic Scatter**! |
 
-### 5. 🎱 Carrom Board Kinetic Scatter (v1.28)
-- **Breaker Striking Force & Momentum**: Just like real carrom where all coins (white, black, red/queen) have equal mass, fragments in 65536 move based purely on **striker force** (`÷2`, `÷4`, `÷8`, `÷16`) with zero weight penalty on higher values! A 256, 512, or 1024 disperses just as far as a 32 or 64.
-- **Dynamic Symmetrical Rays**: Breaker strikes project fragments through open board corridors using balanced 8-directional deflection rays (symmetrical forward V-split for 2 pieces, 4-corner quadrant burst for 4 pieces, and 360° explosive dispersion for 8+ pieces).
+### 5. 🎱 Carrom Board Kinetic Scatter (v1.29)
+- **16-Ray Cushion Bank Shots (Frame Bounces)**: In real carrom, coins that strike cushions or walls don't stop dead—they ricochet outward into the open board! Using 16 granular angular trajectories, pieces hitting borders bank off the cushions (`dr = -dr`, `dc = -dc`) and fly deep into open corridors.
+- **Open-Board Distance Dispersion**: Solved the edge/corner clustering issue where collisions near walls or solid tile clusters previously collapsed pieces into 1-cell neighbors. Now, high-energy breakers (`÷8`, `÷16`) guarantee pieces clear the immediate epicenter neighborhood and scatter across all open quadrants of the grid.
+- **Zero Weight Penalty (Equal Coin Mass)**: Striker force alone determines propulsion distance. A 256, 512, or 1024 travels just as far into open pockets as a 32 or 64.
 - **Immovable Obstacles**: Existing numbers remain 100% fixed in place. Pieces slide through open corridors and bank against walls or solid tiles.
 - **Dynamic Deceleration Glide**: Newly divided fragments visually glide across the grid with realistic carrom friction deceleration (`cubic-bezier(0.16, 0.95, 0.3, 1.05)`).
 - **100% Ghost Preview Support**: The scatter rays are calculated deterministically along the striker's trajectory, so the aim laser and ghost preview show the exact landing spots before you swipe!
