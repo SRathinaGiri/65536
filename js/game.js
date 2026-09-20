@@ -329,9 +329,10 @@ class GameEngine {
   }
 
   // Carrom Board Kinetic Scatter Fission:
-  // Disperses splintered pieces outward like struck carrom coins across open board corridors.
-  // Uses 16 angular trajectories with Cushion Bank Shots (bouncing off outer wooden frame)
-  // and obstacle deflection. Equal coin mass: distance depends purely on breaker striking power!
+  // Disperses splintered pieces outward along angular momentum rays through open cells.
+  // Higher-power breakers (÷4, ÷8, ÷16) project pieces further across open lanes.
+  // Lighter pieces (<=32, 64) carry more velocity and slide deeper, while heavier pieces (>=256) settle closer.
+  // Solid tiles remain stationary obstacles that deflect and stop sliding pieces.
   findFluidSpillSpots(centerR, centerC, count, grid = this.grid, slideDir = 'right', divisor = 2, newVal = 32) {
     const spots = [];
     const claimed = new Set();
@@ -340,137 +341,127 @@ class GameEngine {
       return grid[r][c] === null && !claimed.has(`${r},${c}`);
     };
 
-    // 16 angular rays covering the full 360° circle with granular intermediate angles
-    const fullRays = [
-      { dr:  0, dc:  1 }, // 0: right
-      { dr: -1, dc:  2 }, // 1: shallow up-right
-      { dr: -1, dc:  1 }, // 2: 45° up-right
-      { dr: -2, dc:  1 }, // 3: steep up-right
-      { dr: -1, dc:  0 }, // 4: up
-      { dr: -2, dc: -1 }, // 5: steep up-left
-      { dr: -1, dc: -1 }, // 6: 45° up-left
-      { dr: -1, dc: -2 }, // 7: shallow up-left
-      { dr:  0, dc: -1 }, // 8: left
-      { dr:  1, dc: -2 }, // 9: shallow down-left
-      { dr:  1, dc: -1 }, // 10: 45° down-left
-      { dr:  2, dc: -1 }, // 11: steep down-left
-      { dr:  1, dc:  0 }, // 12: down
-      { dr:  2, dc:  1 }, // 13: steep down-right
-      { dr:  1, dc:  1 }, // 14: 45° down-right
-      { dr:  1, dc:  2 }  // 15: shallow down-right
+    // Forward vector from breaker impact momentum
+    let fDr = 0, fDc = 1;
+    if (slideDir === 'up') { fDr = -1; fDc = 0; }
+    else if (slideDir === 'down') { fDr = 1; fDc = 0; }
+    else if (slideDir === 'left') { fDr = 0; fDc = -1; }
+    else if (slideDir === 'right') { fDr = 0; fDc = 1; }
+
+    const pDr = fDc, pDc = -fDr; // Perpendicular vector (90 deg clockwise flank)
+
+    // Symmetrically balanced rays so all piece counts (2, 4, 8, 16) distribute evenly:
+    // 2 pieces  -> [diag_fwd_right, diag_fwd_left] (symmetrical forward V-split)
+    // 4 pieces  -> adds [diag_back_right, diag_back_left] (4-corner quadrant burst)
+    // 8 pieces  -> adds [forward, rebound_back, flank_right, flank_left] (full 8-way carrom explosion)
+    // 16 pieces -> all 8 rays get 2 pieces each (outer corridor + mid corridor)
+    const rays = [
+      { name: 'diag_fwd_right', dr: fDr + pDr, dc: fDc + pDc },
+      { name: 'diag_fwd_left',  dr: fDr - pDr, dc: fDc - pDc },
+      { name: 'diag_back_right', dr: -fDr + pDr, dc: -fDc + pDc },
+      { name: 'diag_back_left',  dr: -fDr - pDr, dc: -fDc - pDc },
+      { name: 'forward',        dr: fDr, dc: fDc },
+      { name: 'rebound_back',   dr: -fDr, dc: -fDc },
+      { name: 'flank_right',    dr: pDr, dc: pDc },
+      { name: 'flank_left',     dr: -pDr, dc: -pDc }
     ];
 
-    // Primary strike direction index
-    let startIdx = 0; // right
-    if (slideDir === 'up') startIdx = 4;
-    else if (slideDir === 'left') startIdx = 8;
-    else if (slideDir === 'down') startIdx = 12;
-
-    // Symmetrical angular ray fan radiating outward from the striker's impact line
-    const orderedRays = [];
-    for (let offset = 0; offset <= 8; offset++) {
-      if (offset === 0) {
-        orderedRays.push(fullRays[startIdx]);
-      } else {
-        orderedRays.push(fullRays[(startIdx + offset) % 16]);
-        if (offset < 8) {
-          orderedRays.push(fullRays[(startIdx - offset + 16) % 16]);
-        }
-      }
+    // Carrom Coin Physics: All pieces (red/white/black or 32/256/1024) have equal mass!
+    // Travel distance depends ENTIRELY on striker force (breaker divisor), with zero tile weight penalty:
+    let maxTravel = 2;
+    if (divisor >= 16) {
+      maxTravel = this.gridSize - 1; // Full corridor sweep across board
+    } else if (divisor >= 8) {
+      maxTravel = Math.min(this.gridSize - 1, 5); // Explosive strike: up to 5 cells deep
+    } else if (divisor >= 4) {
+      maxTravel = Math.min(this.gridSize - 1, 3); // Solid strike: up to 3 cells deep
+    } else {
+      maxTravel = 2; // Gentle split: 1-2 cells
     }
 
-    // Striking power travel reach
-    let maxTravel = 2;
-    if (divisor >= 16) maxTravel = this.gridSize - 1;
-    else if (divisor >= 8) maxTravel = Math.min(this.gridSize - 1, 5);
-    else if (divisor >= 4) maxTravel = Math.min(this.gridSize - 1, 3);
-    else maxTravel = 2;
-
-    // Phase 1: Carrom Raycasting with Cushion Bank Shots (Bouncing off wooden frame)
-    for (const ray of orderedRays) {
-      if (spots.length >= count) break;
-
+    // Phase 1: Carrom Raycasting
+    // Cast each piece outward along its designated angular ray through open space
+    for (let i = 0; i < count; i++) {
+      const ray = rays[i % rays.length];
+      let bestCell = null;
       let r = centerR;
       let c = centerC;
-      let dr = ray.dr;
-      let dc = ray.dc;
-      let best = null;
-      let maxDistFound = 0;
 
       for (let step = 1; step <= maxTravel; step++) {
-        let nextR = r + dr;
-        let nextC = c + dc;
-
-        // Cushion bounce (carrom frame reflection)
-        if (nextR < 0 || nextR >= this.gridSize) {
-          dr = -dr;
-          nextR = r + dr;
-        }
-        if (nextC < 0 || nextC >= this.gridSize) {
-          dc = -dc;
-          nextC = c + dc;
-        }
-
-        if (nextR < 0 || nextR >= this.gridSize || nextC < 0 || nextC >= this.gridSize) break;
-
-        // Solid obstacle tile stops the sliding coin
-        if (grid[nextR][nextC] !== null) break;
-
-        r = nextR;
-        c = nextC;
-
-        if (r === centerR && c === centerC) continue;
-
-        if (grid[r][c] === null && !claimed.has(`${r},${c}`)) {
-          const dist = Math.hypot(r - centerR, c - centerC);
-          if (dist > maxDistFound) {
-            maxDistFound = dist;
-            best = { r, c, dist };
-          }
+        r += ray.dr;
+        c += ray.dc;
+        if (r < 0 || r >= this.gridSize || c < 0 || c >= this.gridSize) break;
+        // Solid tile acts as an impassable obstacle stopping the slide
+        if (grid[r][c] !== null) break;
+        if (!claimed.has(`${r},${c}`)) {
+          bestCell = { r, c };
         }
       }
 
-      // Ensure pieces clear the immediate epicenter neighborhood for high-energy strikes
-      const minDist = divisor >= 8 ? 1.8 : (divisor >= 4 ? 1.4 : 1.0);
-      if (best && best.dist >= minDist) {
-        claimed.add(`${best.r},${best.c}`);
-        spots.push({ r: best.r, c: best.c });
+      if (bestCell) {
+        claimed.add(`${bestCell.r},${bestCell.c}`);
+        spots.push(bestCell);
       }
     }
 
-    // Phase 2: Open Board Dispersion
-    // If rays were blocked by adjacent obstacles, project remaining pieces into open space
-    // at distances matching the breaker's striking force (never packing them at dist 1!)
+    // Phase 2: Natural Carrom Deflection & Local Fallback
+    // If rays were blocked by obstacles or board borders, fill nearest accessible empty cells
     if (spots.length < count) {
-      const allEmpty = [];
-      for (let r = 0; r < this.gridSize; r++) {
-        for (let c = 0; c < this.gridSize; c++) {
-          if ((r !== centerR || c !== centerC) && grid[r][c] === null && !claimed.has(`${r},${c}`)) {
-            allEmpty.push({ r, c, dist: Math.hypot(r - centerR, c - centerC) });
+      // First check the epicenter cell itself if free
+      if (isFree(centerR, centerC)) {
+        claimed.add(`${centerR},${centerC}`);
+        spots.push({ r: centerR, c: centerC });
+      }
+
+      if (spots.length < count) {
+        const queue = [{ r: centerR, c: centerC, dist: 0 }];
+        const visited = Array.from({ length: this.gridSize }, () => Array(this.gridSize).fill(false));
+        if (centerR >= 0 && centerR < this.gridSize && centerC >= 0 && centerC < this.gridSize) {
+          visited[centerR][centerC] = true;
+        }
+        const allDirs = [
+          [-1, 0], [1, 0], [0, -1], [0, 1],
+          [-1, -1], [-1, 1], [1, -1], [1, 1]
+        ];
+
+        while (queue.length > 0 && spots.length < count) {
+          queue.sort((a, b) => a.dist - b.dist);
+          const curr = queue.shift();
+
+          if (isFree(curr.r, curr.c)) {
+            claimed.add(`${curr.r},${curr.c}`);
+            spots.push({ r: curr.r, c: curr.c });
+            if (spots.length >= count) break;
+          }
+
+          for (const [dr, dc] of allDirs) {
+            const nr = curr.r + dr;
+            const nc = curr.c + dc;
+            if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize && !visited[nr][nc]) {
+              visited[nr][nc] = true;
+              if (grid[nr][nc] === null) {
+                queue.push({
+                  r: nr,
+                  c: nc,
+                  dist: Math.hypot(nr - centerR, nc - centerC)
+                });
+              }
+            }
           }
         }
       }
-
-      if (divisor >= 8) {
-        // High power: scatter to the furthest open corridors first
-        allEmpty.sort((a, b) => b.dist - a.dist);
-      } else if (divisor >= 4) {
-        allEmpty.sort((a, b) => Math.abs(a.dist - 3) - Math.abs(b.dist - 3));
-      } else {
-        allEmpty.sort((a, b) => Math.abs(a.dist - 1.5) - Math.abs(b.dist - 1.5));
-      }
-
-      while (spots.length < count && allEmpty.length > 0) {
-        const pick = allEmpty.shift();
-        claimed.add(`${pick.r},${pick.c}`);
-        spots.push({ r: pick.r, c: pick.c });
-      }
     }
 
-    // Final safety: center cell if board is 100% packed
-    if (spots.length < count && isFree(centerR, centerC)) {
-      claimed.add(`${centerR},${centerC}`);
-      spots.push({ r: centerR, c: centerC });
+    // Phase 3: Absolute board safety sweep (if board was heavily partitioned)
+    if (spots.length < count) {
+      for (let r = 0; r < this.gridSize && spots.length < count; r++) {
+        for (let c = 0; c < this.gridSize && spots.length < count; c++) {
+          if (isFree(r, c)) {
+            claimed.add(`${r},${c}`);
+            spots.push({ r, c });
+          }
+        }
+      }
     }
 
     return spots;
