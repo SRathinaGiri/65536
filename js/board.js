@@ -45,15 +45,15 @@ class BoardRenderer {
     this.trajectoryOverlay.setAttribute('preserveAspectRatio', 'none');
     this.boardEl.appendChild(this.trajectoryOverlay);
 
-    // Create ghost preview container for 50% transparent outcome tiles
-    this.ghostContainer = document.createElement('div');
-    this.ghostContainer.className = 'ghost-preview-container';
-    this.boardEl.appendChild(this.ghostContainer);
-
     // Create tile container
     this.tileContainer = document.createElement('div');
     this.tileContainer.className = 'tile-container';
     this.boardEl.appendChild(this.tileContainer);
+
+    // Create ghost preview container for 50% transparent outcome tiles
+    this.ghostContainer = document.createElement('div');
+    this.ghostContainer.className = 'ghost-preview-container';
+    this.boardEl.appendChild(this.ghostContainer);
   }
 
   render(state) {
@@ -172,8 +172,8 @@ class BoardRenderer {
       this.ghostContainer.innerHTML = '';
     }
     if (this.tileContainer) {
-      this.tileContainer.querySelectorAll('.tile-target-locked, .tile-target-secondary, .tile-elimination-blink').forEach(el => {
-        el.classList.remove('tile-target-locked', 'tile-target-secondary', 'tile-elimination-blink');
+      this.tileContainer.querySelectorAll('.tile-target-locked, .tile-target-secondary, .tile-elimination-blink, .tile-target-dividing').forEach(el => {
+        el.classList.remove('tile-target-locked', 'tile-target-secondary', 'tile-elimination-blink', 'tile-target-dividing');
         el.style.removeProperty('--target-lock-color');
         el.style.removeProperty('--secondary-target-color');
       });
@@ -379,6 +379,8 @@ class BoardRenderer {
           // If tile will be cleared in this direction, make it blink!
           if (collision.eliminated) {
             targetTileEl.classList.add('tile-elimination-blink');
+          } else {
+            targetTileEl.classList.add('tile-target-dividing');
           }
 
           if (isAimed || isNeutral) {
@@ -463,7 +465,8 @@ class BoardRenderer {
 
           const ghost = document.createElement('div');
           ghost.className = `ghost-preview-tile val-${tile.value} ghost-new-piece`;
-          ghost.style.transform = `translate(${tile.col * 100}%, ${tile.row * 100}%)`;
+          ghost.style.left = `${tile.col * stepPercent}%`;
+          ghost.style.top = `${tile.row * stepPercent}%`;
           ghost.style.width = `${stepPercent}%`;
           ghost.style.height = `${stepPercent}%`;
           ghost.style.setProperty('--preview-tier', previewTier);
