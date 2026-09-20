@@ -215,14 +215,17 @@ class BoardRenderer {
     this.trajectoryOverlay.appendChild(centerDot);
 
     const directions = ['up', 'down', 'left', 'right'];
-    // Render inactive directions first, then active direction on top
-    const sortedDirs = directions.filter(d => d !== activeDirection).concat([activeDirection]);
+    // If activeDirection is specified, render other directions first, active on top
+    const sortedDirs = activeDirection
+      ? directions.filter(d => d !== activeDirection).concat([activeDirection])
+      : directions;
 
     for (const dir of sortedDirs) {
       const sim = allSims[dir];
       if (!sim || !sim.valid) continue;
 
-      const isActive = (dir === activeDirection);
+      const isAimed = (activeDirection !== null && dir === activeDirection);
+      const isNeutral = (activeDirection === null);
       const { breakerEnd, collision, hitWall, breakerMoved } = sim;
 
       const destCol = collision ? collision.collisionCell.col : breakerEnd.col;
@@ -235,18 +238,18 @@ class BoardRenderer {
       // Skip if breaker didn't move at all and there's no collision in this direction
       if (dist < 0.01 && !collision) continue;
 
-      if (isActive) {
-        // --- PRIMARY / AIMED DIRECTION (Subtle neon laser) ---
-        // 1. Slender outer aura
+      if (collision) {
+        // --- COLLISION TRAJECTORY (Rendered for every direction that hits a target!) ---
+        // 1. Outer colored glow aura
         const glowLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         glowLine.setAttribute('x1', `${startX}`);
         glowLine.setAttribute('y1', `${startY}`);
         glowLine.setAttribute('x2', `${endX}`);
         glowLine.setAttribute('y2', `${endY}`);
         glowLine.setAttribute('stroke', theme.stroke);
-        glowLine.setAttribute('stroke-width', '1.1');
+        glowLine.setAttribute('stroke-width', isAimed ? '1.2' : (isNeutral ? '0.9' : '0.6'));
         glowLine.setAttribute('stroke-linecap', 'round');
-        glowLine.setAttribute('opacity', '0.65');
+        glowLine.setAttribute('opacity', isAimed ? '0.85' : (isNeutral ? '0.65' : '0.35'));
         glowLine.setAttribute('class', 'trajectory-laser-glow');
         this.trajectoryOverlay.appendChild(glowLine);
 
@@ -257,33 +260,33 @@ class BoardRenderer {
         coreLine.setAttribute('x2', `${endX}`);
         coreLine.setAttribute('y2', `${endY}`);
         coreLine.setAttribute('stroke', '#ffffff');
-        coreLine.setAttribute('stroke-width', '0.65');
+        coreLine.setAttribute('stroke-width', isAimed ? '0.7' : (isNeutral ? '0.55' : '0.45'));
         coreLine.setAttribute('stroke-dasharray', '2 1.5');
         coreLine.setAttribute('stroke-linecap', 'round');
-        coreLine.setAttribute('opacity', '0.95');
+        coreLine.setAttribute('opacity', isAimed ? '0.95' : (isNeutral ? '0.85' : '0.5'));
         coreLine.setAttribute('class', 'trajectory-laser-core');
         this.trajectoryOverlay.appendChild(coreLine);
 
-        // 3. Collision or Wall Marker
-        if (collision) {
-          // Destination Reticle Ring
-          const targetRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          targetRing.setAttribute('cx', `${endX}`);
-          targetRing.setAttribute('cy', `${endY}`);
-          targetRing.setAttribute('r', '1.2');
-          targetRing.setAttribute('fill', theme.stroke);
-          targetRing.setAttribute('stroke', '#ffffff');
-          targetRing.setAttribute('stroke-width', '0.5');
-          targetRing.setAttribute('class', 'trajectory-target-ring');
-          this.trajectoryOverlay.appendChild(targetRing);
+        // 3. Destination Reticle Ring
+        const targetRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        targetRing.setAttribute('cx', `${endX}`);
+        targetRing.setAttribute('cy', `${endY}`);
+        targetRing.setAttribute('r', isAimed ? '1.3' : '1.1');
+        targetRing.setAttribute('fill', theme.stroke);
+        targetRing.setAttribute('stroke', '#ffffff');
+        targetRing.setAttribute('stroke-width', '0.5');
+        targetRing.setAttribute('class', 'trajectory-target-ring');
+        this.trajectoryOverlay.appendChild(targetRing);
 
-          // Target tile lock & outcome badge
-          const targetTileEl = this.tileContainer.querySelector(`.tile[data-id="${collision.targetId}"]`);
-          if (targetTileEl) {
-            targetTileEl.classList.remove('tile-target-secondary');
-            targetTileEl.classList.add('tile-target-locked');
-            targetTileEl.style.setProperty('--target-lock-color', theme.stroke);
+        // 4. Target tile lock & outcome badge
+        const targetTileEl = this.tileContainer.querySelector(`.tile[data-id="${collision.targetId}"]`);
+        if (targetTileEl) {
+          targetTileEl.classList.remove('tile-target-secondary');
+          targetTileEl.classList.add('tile-target-locked');
+          targetTileEl.style.setProperty('--target-lock-color', theme.stroke);
 
+          // Show outcome badge for target collisions (both in neutral mode and aimed mode)
+          if (isAimed || isNeutral) {
             const badge = document.createElement('div');
             badge.className = `collision-preview-badge ${collision.eliminated ? 'badge-eliminated' : 'badge-divide'}`;
             if (collision.eliminated) {
@@ -293,86 +296,29 @@ class BoardRenderer {
             }
             targetTileEl.appendChild(badge);
           }
-        } else if (hitWall && breakerMoved) {
-          // Subtle wall boundary tick in SVG
-          const wallTick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-          let tx1 = endX, ty1 = endY, tx2 = endX, ty2 = endY;
-          const tickHalf = step * 0.28;
-          if (dir === 'up') {
-            const edgeY = breakerEnd.row * step + 0.8;
-            tx1 = endX - tickHalf; tx2 = endX + tickHalf;
-            ty1 = edgeY; ty2 = edgeY;
-          } else if (dir === 'down') {
-            const edgeY = (breakerEnd.row + 1) * step - 0.8;
-            tx1 = endX - tickHalf; tx2 = endX + tickHalf;
-            ty1 = edgeY; ty2 = edgeY;
-          } else if (dir === 'left') {
-            const edgeX = breakerEnd.col * step + 0.8;
-            tx1 = edgeX; tx2 = edgeX;
-            ty1 = endY - tickHalf; ty2 = endY + tickHalf;
-          } else if (dir === 'right') {
-            const edgeX = (breakerEnd.col + 1) * step - 0.8;
-            tx1 = edgeX; tx2 = edgeX;
-            ty1 = endY - tickHalf; ty2 = endY + tickHalf;
-          }
-          wallTick.setAttribute('x1', `${tx1}`);
-          wallTick.setAttribute('y1', `${ty1}`);
-          wallTick.setAttribute('x2', `${tx2}`);
-          wallTick.setAttribute('y2', `${ty2}`);
-          wallTick.setAttribute('stroke', '#ef4444');
-          wallTick.setAttribute('stroke-width', '0.7');
-          wallTick.setAttribute('stroke-linecap', 'round');
-          wallTick.setAttribute('opacity', '0.65');
-          this.trajectoryOverlay.appendChild(wallTick);
         }
-      } else {
-        // --- SECONDARY / OTHER DIRECTIONS (Subtle omnidirectional radar) ---
-        const guideLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        guideLine.setAttribute('x1', `${startX}`);
-        guideLine.setAttribute('y1', `${startY}`);
-        guideLine.setAttribute('x2', `${endX}`);
-        guideLine.setAttribute('y2', `${endY}`);
-        guideLine.setAttribute('stroke-linecap', 'round');
+      } else if (hitWall && breakerMoved) {
+        // --- WALL TRAJECTORY (Subtle, non-distracting guide line) ---
+        const wallLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        wallLine.setAttribute('x1', `${startX}`);
+        wallLine.setAttribute('y1', `${startY}`);
+        wallLine.setAttribute('x2', `${endX}`);
+        wallLine.setAttribute('y2', `${endY}`);
+        wallLine.setAttribute('stroke', '#94a3b8');
+        wallLine.setAttribute('stroke-width', isAimed ? '0.6' : '0.4');
+        wallLine.setAttribute('stroke-dasharray', '1 2');
+        wallLine.setAttribute('stroke-linecap', 'round');
+        wallLine.setAttribute('opacity', isAimed ? '0.5' : '0.25');
+        this.trajectoryOverlay.appendChild(wallLine);
 
-        if (collision) {
-          // Hits a target in this secondary direction
-          guideLine.setAttribute('stroke', theme.stroke);
-          guideLine.setAttribute('stroke-width', '0.55');
-          guideLine.setAttribute('stroke-dasharray', '1.4 1.4');
-          guideLine.setAttribute('opacity', '0.45');
-          this.trajectoryOverlay.appendChild(guideLine);
-
-          // Tiny destination dot
-          const secDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          secDot.setAttribute('cx', `${endX}`);
-          secDot.setAttribute('cy', `${endY}`);
-          secDot.setAttribute('r', '0.85');
-          secDot.setAttribute('fill', theme.stroke);
-          secDot.setAttribute('opacity', '0.65');
-          this.trajectoryOverlay.appendChild(secDot);
-
-          // Subtle secondary target outline
-          const secTargetTile = this.tileContainer.querySelector(`.tile[data-id="${collision.targetId}"]`);
-          if (secTargetTile && !secTargetTile.classList.contains('tile-target-locked')) {
-            secTargetTile.classList.add('tile-target-secondary');
-            secTargetTile.style.setProperty('--secondary-target-color', theme.stroke);
-          }
-        } else if (hitWall && breakerMoved) {
-          // Hits a wall in this secondary direction
-          guideLine.setAttribute('stroke', '#94a3b8');
-          guideLine.setAttribute('stroke-width', '0.4');
-          guideLine.setAttribute('stroke-dasharray', '1 2');
-          guideLine.setAttribute('opacity', '0.25');
-          this.trajectoryOverlay.appendChild(guideLine);
-
-          const secWallDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          secWallDot.setAttribute('cx', `${endX}`);
-          secWallDot.setAttribute('cy', `${endY}`);
-          secWallDot.setAttribute('r', '0.55');
-          secWallDot.setAttribute('fill', '#94a3b8');
-          secWallDot.setAttribute('opacity', '0.35');
-          this.trajectoryOverlay.appendChild(secWallDot);
-        }
+        // Subtle stop dot at the wall
+        const wallDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        wallDot.setAttribute('cx', `${endX}`);
+        wallDot.setAttribute('cy', `${endY}`);
+        wallDot.setAttribute('r', isAimed ? '0.7' : '0.55');
+        wallDot.setAttribute('fill', '#94a3b8');
+        wallDot.setAttribute('opacity', isAimed ? '0.6' : '0.35');
+        this.trajectoryOverlay.appendChild(wallDot);
       }
     }
   }

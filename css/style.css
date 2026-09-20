@@ -456,7 +456,6 @@ header {
 .tile-target.val-32 .tile-inner {
   background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
   color: #ffffff;
-  border: 2px dashed #fca5a5;
 }
 .tile-target.val-32 .tile-number { font-size: 1.7rem; }
 
