@@ -2,7 +2,7 @@
 
 [![Play Online](https://img.shields.io/badge/Play%20Online-srathinagiri.github.io%2F65536-00f0ff?style=for-the-badge&logo=githubpages&logoColor=white)](https://srathinagiri.github.io/65536/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Local--First%20%26%20Offline-10b981?style=for-the-badge&logo=pwa&logoColor=white)](https://srathinagiri.github.io/65536/)
-[![Version](https://img.shields.io/badge/Version-v1.28.1-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
+[![Version](https://img.shields.io/badge/Version-v1.28.2-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 An addictive, tactical HTML5 Progressive Web App (PWA) that inverts the iconic **2048** mechanic on its head.
@@ -75,7 +75,7 @@ When the breaker collides with a target number tile:
 ### 6. 🎯 Real-Time Move Preview & Consequence HUD
 - **Eliminates Hidden Traversal Guesswork**: In 2048, sliding tiles follow strict row/column traversal orders that can make movements hard to anticipate.
 - **Always-On Neutral Radar**: Preview lines, blinking elimination targets, and transparent division outcomes are rendered **by default in real-time**—no dragging or aiming required!
-- **Blinking Elimination & Fission Feedback**: Any target tile guaranteed to be cleared in a given direction **blinks continuously** with a pulsing neon green outline. Target tiles that will be divided/broken also blink dynamically in their consequence tier color (amber/red), rhythmically dimming the old number to eliminate visual confusion with overlapping resultant preview fragments!
+- **Blinking Elimination & Anti-Phase Fission Flip**: Any target tile guaranteed to be cleared in a given direction **blinks continuously** with a pulsing neon green outline. Target tiles that will be divided/broken run an **alternating anti-phase flip** with their overlapping resultant ghost piece: when the original target tile is visible, the ghost piece is hidden; when the ghost piece appears, the target tile hides. Zero overlapping numbers at any time!
 - **Transparent Resultant Division Cells (Ghost Tiles)**: Whenever a direction results in tile division, the exact cells where new pieces land are shown with **75% transparent preview tiles** indicating their directional swipe arrow (`▲`, `▼`, `◀`, `▶`) and predicted number:
   - For **`÷8` Breakers**: Shows all 8 fluid destination cells in 75% transparent ghost preview!
   - For **`÷4` Breakers**: Shows the 4 cardinal cross pieces in transparent preview.

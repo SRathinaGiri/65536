@@ -504,13 +504,23 @@ class BoardRenderer {
           if (renderedCells.has(cellKey)) return;
           renderedCells.add(cellKey);
 
+          // Check if this ghost piece lands on the colliding target tile cell
+          const isOverlappingTarget = sim.collision && (
+            (tile.row === sim.collision.targetInitialPos.row && tile.col === sim.collision.targetInitialPos.col) ||
+            (tile.row === sim.collision.collisionCell.row && tile.col === sim.collision.collisionCell.col)
+          );
+
           const ghost = document.createElement('div');
-          ghost.className = `ghost-preview-tile val-${tile.value} ghost-new-piece`;
+          ghost.className = `ghost-preview-tile val-${tile.value} ghost-new-piece${isOverlappingTarget ? ' ghost-overlapping-target' : ''}`;
           ghost.style.left = `${tile.col * stepPercent}%`;
           ghost.style.top = `${tile.row * stepPercent}%`;
           ghost.style.width = `${stepPercent}%`;
           ghost.style.height = `${stepPercent}%`;
           ghost.style.setProperty('--preview-tier', previewTier);
+          if (isOverlappingTarget) {
+            const theme = tierColors[previewTier];
+            ghost.style.setProperty('--target-lock-color', theme.stroke);
+          }
 
           const inner = document.createElement('div');
           inner.className = 'ghost-inner';
