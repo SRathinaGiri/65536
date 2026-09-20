@@ -172,8 +172,8 @@ class BoardRenderer {
       this.ghostContainer.innerHTML = '';
     }
     if (this.tileContainer) {
-      this.tileContainer.querySelectorAll('.tile-target-locked, .tile-target-secondary').forEach(el => {
-        el.classList.remove('tile-target-locked', 'tile-target-secondary');
+      this.tileContainer.querySelectorAll('.tile-target-locked, .tile-target-secondary, .tile-elimination-blink').forEach(el => {
+        el.classList.remove('tile-target-locked', 'tile-target-secondary', 'tile-elimination-blink');
         el.style.removeProperty('--target-lock-color');
         el.style.removeProperty('--secondary-target-color');
       });
@@ -376,6 +376,11 @@ class BoardRenderer {
           targetTileEl.classList.add('tile-target-locked');
           targetTileEl.style.setProperty('--target-lock-color', theme.stroke);
 
+          // If tile will be cleared in this direction, make it blink!
+          if (collision.eliminated) {
+            targetTileEl.classList.add('tile-elimination-blink');
+          }
+
           if (isAimed || isNeutral) {
             const badge = document.createElement('div');
             badge.className = `collision-preview-badge badge-tier-${tier}`;
@@ -416,34 +421,48 @@ class BoardRenderer {
       }
     }
 
-    // 5. Render 50% transparent ghost preview of outcome cells for the active direction
-    if (activeDirection && allSims[activeDirection] && allSims[activeDirection].valid && this.ghostContainer) {
-      const activeSim = allSims[activeDirection];
+    // 5. In case of division: show where resultant cells will be occupied in 50% transparent
+    if (this.ghostContainer) {
       const stepPercent = 100 / gridSize;
-      const { collision } = activeSim;
+      const dirsToRender = activeDirection
+        ? [activeDirection]
+        : ['up', 'down', 'left', 'right'];
 
-      let previewTier = 'amber';
-      if (collision) {
-        const totalCells = activeSim.totalCells || (gridSize * gridSize);
-        const curOcc = activeSim.currentOccupied || 0;
-        const projOcc = activeSim.projectedOccupied || curOcc;
+      const renderedCells = new Set();
+      const dirSymbols = { up: '▲', down: '▼', left: '◀', right: '▶' };
+
+      dirsToRender.forEach(d => {
+        const sim = allSims[d];
+        if (!sim || !sim.valid || !sim.collision || sim.collision.eliminated) return;
+        if (!Array.isArray(sim.projectedTiles)) return;
+
+        // Consequence tier for this collision
+        const totalCells = sim.totalCells || (gridSize * gridSize);
+        const curOcc = sim.currentOccupied || 0;
+        const projOcc = sim.projectedOccupied || curOcc;
         const remainingEmpty = totalCells - projOcc;
-        if (collision.eliminated) {
-          previewTier = 'green';
-        } else if (
-          collision.piecesCount >= 8 ||
-          (activeSim.fissionRisk && activeSim.fissionRisk.isCrowded) ||
+        let previewTier = 'amber';
+        if (
+          sim.collision.piecesCount >= 8 ||
+          (sim.fissionRisk && sim.fissionRisk.isCrowded) ||
           remainingEmpty <= 4 ||
           projOcc >= Math.floor(totalCells * 0.85)
         ) {
           previewTier = 'red';
         }
-      }
 
-      if (Array.isArray(activeSim.projectedTiles)) {
-        activeSim.projectedTiles.forEach(tile => {
+        const symbol = dirSymbols[d] || '';
+
+        // Resultant newly divided pieces
+        const resultantTiles = sim.projectedTiles.filter(t => t.isNewPiece);
+
+        resultantTiles.forEach(tile => {
+          const cellKey = `${tile.row},${tile.col}`;
+          if (renderedCells.has(cellKey)) return;
+          renderedCells.add(cellKey);
+
           const ghost = document.createElement('div');
-          ghost.className = `ghost-preview-tile val-${tile.value} ${tile.isNewPiece ? 'ghost-new-piece' : 'ghost-existing-piece'}`;
+          ghost.className = `ghost-preview-tile val-${tile.value} ghost-new-piece`;
           ghost.style.transform = `translate(${tile.col * 100}%, ${tile.row * 100}%)`;
           ghost.style.width = `${stepPercent}%`;
           ghost.style.height = `${stepPercent}%`;
@@ -452,13 +471,13 @@ class BoardRenderer {
           const inner = document.createElement('div');
           inner.className = 'ghost-inner';
           inner.innerHTML = `
-            ${tile.isNewPiece ? '<span class="ghost-tag">PREVIEW</span>' : ''}
+            <span class="ghost-dir-badge">${symbol}</span>
             <span class="tile-number">${tile.value.toLocaleString()}</span>
           `;
           ghost.appendChild(inner);
           this.ghostContainer.appendChild(ghost);
         });
-      }
+      });
     }
   }
 

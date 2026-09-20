@@ -2,7 +2,7 @@
 
 [![Play Online](https://img.shields.io/badge/Play%20Online-srathinagiri.github.io%2F65536-00f0ff?style=for-the-badge&logo=githubpages&logoColor=white)](https://srathinagiri.github.io/65536/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Local--First%20%26%20Offline-10b981?style=for-the-badge&logo=pwa&logoColor=white)](https://srathinagiri.github.io/65536/)
-[![Version](https://img.shields.io/badge/Version-v1.17-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
+[![Version](https://img.shields.io/badge/Version-v1.18-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 An addictive, tactical HTML5 Progressive Web App (PWA) that inverts the iconic **2048** mechanic on its head.
@@ -58,14 +58,16 @@ Built strictly as a **Local-First PWA**:
 
 ### 5. 🎯 Real-Time Move Preview & Consequence HUD
 - **Eliminates Hidden Traversal Guesswork**: In 2048, sliding tiles follow strict row/column traversal orders that can make movements hard to anticipate.
-- **Laser Aiming Beam**: Drag your finger (or mouse) on the board to preview the breaker's exact flight path before releasing. Lines originate at the breaker tile edge and terminate at the destination boundary, keeping breaker numerals (`2`, `4`, `8`, `16`) 100% visible at all times.
-- **50% Transparent Board Outcome Preview (Ghost Tiles)**: When aiming or previewing any direction, a 50% opacity phantom layer reveals every cell that will be occupied after the move!
-  - For **`÷8` and `÷4` Breakers**: Shows the exact surrounding cells where all detonated pieces will land, as well as where neighboring tiles will be pushed outward.
+- **Always-On Neutral Radar**: Preview lines, blinking elimination targets, and transparent division outcomes are rendered **by default in real-time**—no dragging or aiming required!
+- **Blinking Elimination Feedback**: Any target tile guaranteed to be cleared in a given direction **blinks continuously** with a pulsing neon green outline and scale animation, providing unmistakable confirmation that the tile will disappear.
+- **Transparent Resultant Division Cells (Ghost Tiles)**: Whenever a direction results in tile division, the exact cells where new pieces land are shown with **50% transparent preview tiles** indicating their directional swipe arrow (`▲`, `▼`, `◀`, `▶`) and predicted number:
+  - For **`÷8` Breakers**: Shows all 8 surrounding cells in transparent preview, revealing the full radial explosion pattern!
+  - For **`÷4` Breakers**: Shows the 4 cardinal cross pieces in transparent preview.
   - For **`÷2` Breakers**: Shows the twin fragment destination cells.
-  - For **Tile Eliminations**: Shows the cleared tile disappearing from the board.
+- **Laser Aiming Beam**: Lines originate at the breaker tile edge and terminate at the destination boundary, keeping breaker numerals (`2`, `4`, `8`, `16`) 100% visible at all times.
 - **Consequence Tier Color Coding**:
-  - 🟢 **Green (`#00ff66`)**: Guaranteed tile elimination (e.g. `32 ÷ 2 = 16 ➔ 💥 Cleared!`).
-  - 🟡 **Amber (`#ffb300`)**: Standard division without overcrowding risk (e.g. `128 ÷ 2 = 64 × 2 tiles`).
+  - 🟢 **Green (`#00ff66`)**: Guaranteed tile elimination (e.g. `64 ÷ 4 = 16 ➔ 💥 Cleared!`).
+  - 🟡 **Amber (`#ffb300`)**: Standard division without overcrowding risk (e.g. `2,048 ÷ 4 = 512 × 4 tiles`).
   - 🔴 **Red (`#ff1744`)**: Dangerous expansion (8/16-piece fission detonations, board occupancy $\ge 85\%$, or $\le 4$ empty cells remaining).
 - **Exact Division Equation Badges**: Target lock reticles display the exact arithmetic: `${target} ÷ ${breaker} = ${result} × ${pieces} tiles`.
 - **Directional Move Preview Compass HUD**: A 4-way glanceable preview bar above the board reveals consequence tiers and action outcomes for all four swipe directions (`▲`, `▼`, `◀`, `▶`). Tap any chip on mobile to preview its outcome before confirming!

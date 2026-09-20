@@ -1295,11 +1295,28 @@ body.warp-targeting .tile {
   border-radius: 3px;
 }
 
+.ghost-preview-tile .ghost-dir-badge {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 0.65rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
 .ghost-preview-tile .tile-number {
   font-size: 1.15rem;
   font-weight: 900;
   color: #ffffff;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+/* Tile marked for guaranteed elimination blinks */
+.tile.tile-elimination-blink .tile-inner {
+  animation: eliminationTileBlink 0.8s infinite ease-in-out !important;
+  border: 3px solid #00ff66 !important;
+  box-shadow: 0 0 22px rgba(0, 255, 102, 0.95), inset 0 0 12px rgba(0, 255, 102, 0.5) !important;
 }
 
 /* Directional Trajectory Compass HUD */
