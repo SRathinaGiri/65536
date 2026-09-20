@@ -202,17 +202,9 @@ class BoardRenderer {
     };
     const theme = themeColors[breakerVal] || themeColors[2];
 
-    const startX = (breakerStart.col + 0.5) * step;
-    const startY = (breakerStart.row + 0.5) * step;
-
-    // Subtle center marker at breaker (delicate, non-obstructive)
-    const centerDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    centerDot.setAttribute('cx', `${startX}`);
-    centerDot.setAttribute('cy', `${startY}`);
-    centerDot.setAttribute('r', '0.7');
-    centerDot.setAttribute('fill', '#ffffff');
-    centerDot.setAttribute('opacity', '0.7');
-    this.trajectoryOverlay.appendChild(centerDot);
+    const cx = (breakerStart.col + 0.5) * step;
+    const cy = (breakerStart.row + 0.5) * step;
+    const offset = step * 0.44; // Half-tile distance to tile boundary
 
     const directions = ['up', 'down', 'left', 'right'];
     // If activeDirection is specified, render other directions first, active on top
@@ -226,26 +218,99 @@ class BoardRenderer {
 
       const isAimed = (activeDirection !== null && dir === activeDirection);
       const isNeutral = (activeDirection === null);
-      const { breakerEnd, collision, hitWall, breakerMoved } = sim;
+      const { collision } = sim;
 
-      const destCol = collision ? collision.collisionCell.col : breakerEnd.col;
-      const destRow = collision ? collision.collisionCell.row : breakerEnd.row;
+      // Determine if there is a direct target in front of the breaker in this direction
+      let isDirectHit = false;
+      let targetRow = null;
+      let targetCol = null;
 
-      const endX = (destCol + 0.5) * step;
-      const endY = (destRow + 0.5) * step;
+      if (collision && collision.targetInitialPos) {
+        const tPos = collision.targetInitialPos;
+        if (dir === 'up' && tPos.col === breakerStart.col && tPos.row < breakerStart.row) {
+          isDirectHit = true;
+          targetRow = tPos.row;
+          targetCol = breakerStart.col;
+        } else if (dir === 'down' && tPos.col === breakerStart.col && tPos.row > breakerStart.row) {
+          isDirectHit = true;
+          targetRow = tPos.row;
+          targetCol = breakerStart.col;
+        } else if (dir === 'left' && tPos.row === breakerStart.row && tPos.col < breakerStart.col) {
+          isDirectHit = true;
+          targetRow = breakerStart.row;
+          targetCol = tPos.col;
+        } else if (dir === 'right' && tPos.row === breakerStart.row && tPos.col > breakerStart.col) {
+          isDirectHit = true;
+          targetRow = breakerStart.row;
+          targetCol = tPos.col;
+        }
+      }
 
-      const dist = Math.hypot(endX - startX, endY - startY);
-      // Skip if breaker didn't move at all and there's no collision in this direction
-      if (dist < 0.01 && !collision) continue;
+      // Calculate start and end coordinates anchored strictly to tile boundaries
+      let x1 = cx, y1 = cy;
+      let x2 = cx, y2 = cy;
 
-      if (collision) {
-        // --- COLLISION TRAJECTORY (Rendered for every direction that hits a target!) ---
+      if (dir === 'up') {
+        x1 = cx;
+        y1 = cy - offset; // Top boundary of breaker
+        if (isDirectHit) {
+          x2 = cx;
+          y2 = (targetRow + 0.5) * step + offset; // Bottom boundary of target tile
+        } else {
+          // If breaker already flush against top wall, skip
+          if (breakerStart.row === 0) continue;
+          x2 = cx;
+          y2 = 0; // Top wall boundary
+        }
+      } else if (dir === 'down') {
+        x1 = cx;
+        y1 = cy + offset; // Bottom boundary of breaker
+        if (isDirectHit) {
+          x2 = cx;
+          y2 = (targetRow + 0.5) * step - offset; // Top boundary of target tile
+        } else {
+          if (breakerStart.row === gridSize - 1) continue;
+          x2 = cx;
+          y2 = 100; // Bottom wall boundary
+        }
+      } else if (dir === 'left') {
+        x1 = cx - offset; // Left boundary of breaker
+        y1 = cy;
+        if (isDirectHit) {
+          x2 = (targetCol + 0.5) * step + offset; // Right boundary of target tile
+          y2 = cy;
+        } else {
+          if (breakerStart.col === 0) continue;
+          x2 = 0; // Left wall boundary
+          y2 = cy;
+        }
+      } else if (dir === 'right') {
+        x1 = cx + offset; // Right boundary of breaker
+        y1 = cy;
+        if (isDirectHit) {
+          x2 = (targetCol + 0.5) * step - offset; // Left boundary of target tile
+          y2 = cy;
+        } else {
+          if (breakerStart.col === gridSize - 1) continue;
+          x2 = 100; // Right wall boundary
+          y2 = cy;
+        }
+      }
+
+      // Prevent inverted lines if tiles are directly adjacent
+      if (dir === 'up' && y1 <= y2) y1 = y2;
+      if (dir === 'down' && y1 >= y2) y1 = y2;
+      if (dir === 'left' && x1 <= x2) x1 = x2;
+      if (dir === 'right' && x1 >= x2) x1 = x2;
+
+      if (isDirectHit) {
+        // --- TARGET COLLISION TRAJECTORY (Neon colored laser to target tile boundary) ---
         // 1. Outer colored glow aura
         const glowLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        glowLine.setAttribute('x1', `${startX}`);
-        glowLine.setAttribute('y1', `${startY}`);
-        glowLine.setAttribute('x2', `${endX}`);
-        glowLine.setAttribute('y2', `${endY}`);
+        glowLine.setAttribute('x1', `${x1}`);
+        glowLine.setAttribute('y1', `${y1}`);
+        glowLine.setAttribute('x2', `${x2}`);
+        glowLine.setAttribute('y2', `${y2}`);
         glowLine.setAttribute('stroke', theme.stroke);
         glowLine.setAttribute('stroke-width', isAimed ? '1.2' : (isNeutral ? '0.9' : '0.6'));
         glowLine.setAttribute('stroke-linecap', 'round');
@@ -255,10 +320,10 @@ class BoardRenderer {
 
         // 2. White dashed flowing core line
         const coreLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        coreLine.setAttribute('x1', `${startX}`);
-        coreLine.setAttribute('y1', `${startY}`);
-        coreLine.setAttribute('x2', `${endX}`);
-        coreLine.setAttribute('y2', `${endY}`);
+        coreLine.setAttribute('x1', `${x1}`);
+        coreLine.setAttribute('y1', `${y1}`);
+        coreLine.setAttribute('x2', `${x2}`);
+        coreLine.setAttribute('y2', `${y2}`);
         coreLine.setAttribute('stroke', '#ffffff');
         coreLine.setAttribute('stroke-width', isAimed ? '0.7' : (isNeutral ? '0.55' : '0.45'));
         coreLine.setAttribute('stroke-dasharray', '2 1.5');
@@ -267,16 +332,16 @@ class BoardRenderer {
         coreLine.setAttribute('class', 'trajectory-laser-core');
         this.trajectoryOverlay.appendChild(coreLine);
 
-        // 3. Destination Reticle Ring
-        const targetRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        targetRing.setAttribute('cx', `${endX}`);
-        targetRing.setAttribute('cy', `${endY}`);
-        targetRing.setAttribute('r', isAimed ? '1.3' : '1.1');
-        targetRing.setAttribute('fill', theme.stroke);
-        targetRing.setAttribute('stroke', '#ffffff');
-        targetRing.setAttribute('stroke-width', '0.5');
-        targetRing.setAttribute('class', 'trajectory-target-ring');
-        this.trajectoryOverlay.appendChild(targetRing);
+        // 3. Subtle destination contact dot at target boundary
+        const targetDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        targetDot.setAttribute('cx', `${x2}`);
+        targetDot.setAttribute('cy', `${y2}`);
+        targetDot.setAttribute('r', isAimed ? '1.0' : '0.85');
+        targetDot.setAttribute('fill', theme.stroke);
+        targetDot.setAttribute('stroke', '#ffffff');
+        targetDot.setAttribute('stroke-width', '0.4');
+        targetDot.setAttribute('class', 'trajectory-target-ring');
+        this.trajectoryOverlay.appendChild(targetDot);
 
         // 4. Target tile lock & outcome badge
         const targetTileEl = this.tileContainer.querySelector(`.tile[data-id="${collision.targetId}"]`);
@@ -285,7 +350,6 @@ class BoardRenderer {
           targetTileEl.classList.add('tile-target-locked');
           targetTileEl.style.setProperty('--target-lock-color', theme.stroke);
 
-          // Show outcome badge for target collisions (both in neutral mode and aimed mode)
           if (isAimed || isNeutral) {
             const badge = document.createElement('div');
             badge.className = `collision-preview-badge ${collision.eliminated ? 'badge-eliminated' : 'badge-divide'}`;
@@ -297,24 +361,24 @@ class BoardRenderer {
             targetTileEl.appendChild(badge);
           }
         }
-      } else if (hitWall && breakerMoved) {
-        // --- WALL TRAJECTORY (Subtle, non-distracting guide line) ---
+      } else {
+        // --- WALL TRAJECTORY (Subtle, non-distracting GREY guide line to wall boundary) ---
         const wallLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        wallLine.setAttribute('x1', `${startX}`);
-        wallLine.setAttribute('y1', `${startY}`);
-        wallLine.setAttribute('x2', `${endX}`);
-        wallLine.setAttribute('y2', `${endY}`);
+        wallLine.setAttribute('x1', `${x1}`);
+        wallLine.setAttribute('y1', `${y1}`);
+        wallLine.setAttribute('x2', `${x2}`);
+        wallLine.setAttribute('y2', `${y2}`);
         wallLine.setAttribute('stroke', '#94a3b8');
-        wallLine.setAttribute('stroke-width', isAimed ? '0.6' : '0.4');
+        wallLine.setAttribute('stroke-width', isAimed ? '0.55' : '0.4');
         wallLine.setAttribute('stroke-dasharray', '1 2');
         wallLine.setAttribute('stroke-linecap', 'round');
         wallLine.setAttribute('opacity', isAimed ? '0.5' : '0.25');
         this.trajectoryOverlay.appendChild(wallLine);
 
-        // Subtle stop dot at the wall
+        // Subtle grey stop dot at the wall boundary
         const wallDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        wallDot.setAttribute('cx', `${endX}`);
-        wallDot.setAttribute('cy', `${endY}`);
+        wallDot.setAttribute('cx', `${x2}`);
+        wallDot.setAttribute('cy', `${y2}`);
         wallDot.setAttribute('r', isAimed ? '0.7' : '0.55');
         wallDot.setAttribute('fill', '#94a3b8');
         wallDot.setAttribute('opacity', isAimed ? '0.6' : '0.35');
