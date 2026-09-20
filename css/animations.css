@@ -273,4 +273,58 @@
   }
 }
 
+/* Supernova / Big Bang Finishing Animations */
+.tile-supernova-arming {
+  animation: supernovaArming 0.35s infinite alternate ease-in-out !important;
+  z-index: 25 !important;
+}
+
+@keyframes supernovaArming {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 14px rgba(0, 240, 255, 0.8), inset 0 0 8px rgba(255, 255, 255, 0.5);
+    filter: brightness(1.2);
+  }
+  100% {
+    transform: scale(1.08);
+    box-shadow: 0 0 28px rgba(217, 70, 239, 0.95), 0 0 45px rgba(255, 214, 0, 0.8), inset 0 0 16px #ffffff;
+    filter: brightness(1.8);
+  }
+}
+
+.tile-big-bang-exploding {
+  animation: bigBangExplode 0.45s ease-out forwards !important;
+}
+
+@keyframes bigBangExplode {
+  0% {
+    transform: scale(1);
+    filter: brightness(2) drop-shadow(0 0 20px #00f0ff);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.35);
+    filter: brightness(3) drop-shadow(0 0 40px #ffffff);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(0);
+    filter: brightness(4);
+    opacity: 0;
+  }
+}
+
+.board-big-bang-shake {
+  animation: bigBangShake 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97) both !important;
+}
+
+@keyframes bigBangShake {
+  0%, 100% { transform: translate(0, 0) scale(1); filter: brightness(1); }
+  10%, 90% { transform: translate(-6px, 4px) scale(1.02); filter: brightness(1.6); }
+  20%, 80% { transform: translate(8px, -6px) scale(1.03); filter: brightness(1.9); }
+  30%, 50%, 70% { transform: translate(-8px, 6px) scale(1.04); filter: brightness(2.1); }
+  40%, 60% { transform: translate(6px, -4px) scale(1.02); filter: brightness(1.7); }
+}
+
+
 

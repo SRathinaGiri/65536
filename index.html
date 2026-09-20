@@ -38,7 +38,7 @@
     <header>
       <div class="title-area">
         <h1>65536</h1>
-        <div class="subtitle">Reverse 2048 <span class="version-tag">v1.24</span></div>
+        <div class="subtitle">Reverse 2048 <span class="version-tag">v1.25</span></div>
       </div>
       <div class="header-actions">
         <button id="headerInstallBtn" class="icon-btn" aria-label="Install on this device" title="Install on this device">
@@ -225,7 +225,7 @@
           </div>
           <div class="legend-item">
             <span class="breaker-pill pill-8">÷8</span>
-            <span><strong>Cyan Breaker (10% BONUS!)</strong>: Detonates tile into 8 surrounding pieces (radial burst), pushing nearby tiles outward!</span>
+            <span><strong>Cyan Breaker (10% BONUS!)</strong>: Detonates tile into 8 pieces that fluidly spill and glide into adjacent empty spaces, keeping solid tiles immobile!</span>
           </div>
         </div>
 
@@ -234,6 +234,16 @@
         <div class="rule-highlight">
           <strong>✨ Clear to Win:</strong>
           When any target tile is reduced to <strong>16, 8, 4, or 2 (≤ 16)</strong>, it shatters and <strong>disappears completely from the board</strong>!
+        </div>
+
+        <div class="rule-highlight" style="background: rgba(0, 240, 255, 0.12); border-left-color: #00f0ff;">
+          <strong>💥 Supernova / Big Bang Finishing:</strong>
+          When remaining tiles on the board can mathematically never overflow the grid (even under 8-dividers), a critical mass cascade triggers automatically! All tiles detonate from smallest to largest in an epic escalating Big Bang explosion with full bonus points awarded.
+        </div>
+
+        <div class="rule-highlight" style="background: rgba(139, 92, 246, 0.12); border-left-color: #8b5cf6;">
+          <strong>🎬 Move-History Replay:</strong>
+          Tap the 🎬 header button anytime to review, play back (0.5x–4x), scrub through your game timeline, or export/import complete games as JSON!
         </div>
 
         <p><strong>Ultimate Goal:</strong> Clear all target tiles to advance through the campaign from 4096 all the way to 65536!</p>
@@ -303,6 +313,11 @@
           <span>🧭 Show Move Preview Compass HUD</span>
         </label>
 
+        <label class="checkbox-group">
+          <input type="checkbox" id="toggleSupernovaFinishing" checked>
+          <span>💥 Supernova / Big Bang Finishing (Auto-clear when grid cannot overflow)</span>
+        </label>
+
         <div class="settings-install-section" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; margin-bottom: 8px;">
           <button id="settingsInstallBtn" type="button" class="btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; background: rgba(99, 102, 241, 0.25); border: 1px solid rgba(139, 92, 246, 0.5);">
             <span>📲 Install App on This Device</span>
@@ -322,6 +337,7 @@
   <!-- Victory Modal -->
   <div id="winModal" class="modal modal-win">
     <div class="modal-content">
+      <div id="winSupernovaBadge" style="display: none; color: #00f0ff; font-weight: 800; font-size: 0.95rem; margin-bottom: 4px; letter-spacing: 0.5px;">💥 BIG BANG SUPERNOVA FINISHING!</div>
       <h2 class="modal-title">🏆 LEVEL CLEARED!</h2>
       <p id="winMessage" style="margin: 12px 0; color: #f8fafc; font-size: 1.1rem;">
         Magnificent! You completely shattered this tier down to dust!

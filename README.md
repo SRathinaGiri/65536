@@ -2,7 +2,7 @@
 
 [![Play Online](https://img.shields.io/badge/Play%20Online-srathinagiri.github.io%2F65536-00f0ff?style=for-the-badge&logo=githubpages&logoColor=white)](https://srathinagiri.github.io/65536/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Local--First%20%26%20Offline-10b981?style=for-the-badge&logo=pwa&logoColor=white)](https://srathinagiri.github.io/65536/)
-[![Version](https://img.shields.io/badge/Version-v1.24-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
+[![Version](https://img.shields.io/badge/Version-v1.25-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 An addictive, tactical HTML5 Progressive Web App (PWA) that inverts the iconic **2048** mechanic on its head.
@@ -50,18 +50,23 @@ Built strictly as a **Local-First PWA**:
 | :---: | :---: | :---: | :--- |
 | **÷2** | Crimson Red | **75%** | Divides target tile by 2 into **2 equal pieces**. |
 | **÷4** | Gold Amber | **15%** | Divides target tile by 4 into **4 pieces** in a cardinal cross formation. |
-| **÷8** | Cyan Neon | **10% (BONUS!)** | Detonates target tile into **8 pieces** in a radial 3×3 blast, actively **pushing neighboring tiles outward** into open cells! |
+| **÷8** | Cyan Neon | **10% (BONUS!)** | Detonates target tile into **8 pieces** that **fluidly spill and glide** into adjacent empty spaces, keeping all solid tiles stationary! |
 
-### 4. ✨ Tile Elimination Threshold
+### 4. 🌊 Fluid Spill & Gliding Animation (v1.23)
+- **Natural Liquid Flow**: Rather than unnaturally shifting existing solid tiles, the 8 resulting pieces from an 8-breaker flow like fluid directly into neighboring empty cells.
+- **Stationary Solid Tiles**: Existing numbers remain 100% fixed in place.
+- **Organic Gliding Animation**: Each newly divided fragment physically emerges from the shattered source tile and smoothly glides across the board into its destination cell with a staggered visual spray.
+
+### 5. ✨ Tile Elimination Threshold
 - When any target tile is reduced to **16, 8, 4, or 2** ($\le 16$), it shatters into sparkling particles and **completely disappears from the board**.
 - **Tier Victory**: Eliminate all target tiles to clear the board and advance to the next level!
 
-### 5. 🎯 Real-Time Move Preview & Consequence HUD
+### 6. 🎯 Real-Time Move Preview & Consequence HUD
 - **Eliminates Hidden Traversal Guesswork**: In 2048, sliding tiles follow strict row/column traversal orders that can make movements hard to anticipate.
 - **Always-On Neutral Radar**: Preview lines, blinking elimination targets, and transparent division outcomes are rendered **by default in real-time**—no dragging or aiming required!
 - **Blinking Elimination Feedback**: Any target tile guaranteed to be cleared in a given direction **blinks continuously** with a pulsing neon green outline and scale animation, providing unmistakable confirmation that the tile will disappear.
-- **Transparent Resultant Division Cells (Ghost Tiles)**: Whenever a direction results in tile division, the exact cells where new pieces land are shown with **50% transparent preview tiles** indicating their directional swipe arrow (`▲`, `▼`, `◀`, `▶`) and predicted number:
-  - For **`÷8` Breakers**: Shows all 8 surrounding cells in transparent preview, revealing the full radial explosion pattern!
+- **Transparent Resultant Division Cells (Ghost Tiles)**: Whenever a direction results in tile division, the exact cells where new pieces land are shown with **75% transparent preview tiles** indicating their directional swipe arrow (`▲`, `▼`, `◀`, `▶`) and predicted number:
+  - For **`÷8` Breakers**: Shows all 8 fluid destination cells in 75% transparent ghost preview!
   - For **`÷4` Breakers**: Shows the 4 cardinal cross pieces in transparent preview.
   - For **`÷2` Breakers**: Shows the twin fragment destination cells.
 - **Laser Aiming Beam**: Lines originate at the breaker tile edge and terminate at the destination boundary, keeping breaker numerals (`2`, `4`, `8`, `16`) 100% visible at all times.
@@ -121,6 +126,24 @@ Record, analyze, export, and showcase complete 65,536 games:
 - **Export & Import JSON**: Download any completed or active game replay as a clean `.json` file (`65536-replay-LV{level}-{score}pts.json`) to share, archive, or reload later.
 - **Keyboard Shortcuts in Replay**: `Space` (Play/Pause), `ArrowLeft` (Step Back), `ArrowRight` (Step Forward), `Home` (Start), `End` (Finish), `Esc` (Close).
 - **Post-Game Integration**: Direct **🎬 Watch Game Replay** buttons on both Victory and Game Over screens.
+
+---
+
+## 💥 Supernova / Big Bang Finishing (v1.25)
+
+Eliminates repetitive late-game cleanup when victory is mathematically assured:
+- **Critical Mass Detection**: Evaluates all remaining target tiles against worst-case 8-divider expansion.
+- **The Math**:
+  - Tiles $\le 128$: Vanish in a single `÷8` hit ($0$ pieces remain).
+  - Tiles $256, 512, 1024$: Generate at most 8 pieces before subsequent hits eliminate them ($8$ pieces peak).
+  - Tiles $2048, 4096+$: Branch into $\ge 64$ pieces (active campaign challenges).
+  - Whenever $\sum \text{Peak8Pieces}(T) + 1 < \text{gridSize}^2$, grid overflow is physically impossible!
+- **Escalating Detonation Sequence**:
+  - Explosions cascade **sequentially from the smallest tiles toward the largest tiles**.
+  - Escalating synthesized pitch and increasing particle intensities build suspense.
+  - The final largest tile detonates in a massive **Big Bang screen shockwave** with deep sub-bass resonance and a radiant triumphal chord!
+- **Full Scoring**: Automatically awards full elimination points for all remaining tiles so your score reflects a complete clear.
+- **Customizable**: Can be toggled ON or OFF in Settings (`⚙️`) with the `💥 Supernova / Big Bang Finishing` checkbox.
 
 ---
 

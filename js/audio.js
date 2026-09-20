@@ -320,6 +320,71 @@ class SoundFX {
     osc.start();
     osc.stop(this.ctx.currentTime + 0.05);
   }
+
+  playSupernovaStep(progress = 0, isFinal = false) {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+
+    if (isFinal) {
+      // THE BIG BANG: Massive cosmic explosion with triumphant shimmer
+      // 1. Deep Sub-Bass Impact
+      const bassOsc = this.ctx.createOscillator();
+      const bassGain = this.ctx.createGain();
+      bassOsc.type = 'sine';
+      bassOsc.frequency.setValueAtTime(160, now);
+      bassOsc.frequency.exponentialRampToValueAtTime(32, now + 0.6);
+      bassGain.gain.setValueAtTime(0.4, now);
+      bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+      bassOsc.connect(bassGain);
+      bassGain.connect(this.ctx.destination);
+      bassOsc.start(now);
+      bassOsc.stop(now + 0.6);
+
+      // 2. Cosmic White Noise Shockwave
+      this.playNoise(0.4, 0.3);
+
+      // 3. Soaring Radiant Chord (C5, E5, G5, C6, E6)
+      const chordFreqs = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+      chordFreqs.forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + 0.05 + idx * 0.04);
+        gain.gain.setValueAtTime(0.2, now + 0.05 + idx * 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05 + idx * 0.04 + 0.55);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now + 0.05 + idx * 0.04);
+        osc.stop(now + 0.05 + idx * 0.04 + 0.55);
+      });
+      return;
+    }
+
+    // Escalating Tile Pop: Pitch rises from 340Hz to 1060Hz as tiles get bigger
+    const baseFreq = 340 + Math.min(progress, 1) * 720;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(baseFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.35, now + 0.08);
+
+    const volume = 0.15 + Math.min(progress, 1) * 0.12;
+    gain.gain.setValueAtTime(volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.12);
+
+    // Subtle crisp spark
+    this.playNoise(0.04, 0.08 + Math.min(progress, 1) * 0.06);
+  }
 }
 
 window.soundFX = new SoundFX();

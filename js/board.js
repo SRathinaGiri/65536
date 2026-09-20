@@ -543,6 +543,111 @@ class BoardRenderer {
     this.createWarpParticles(row, col, gridSize);
   }
 
+  // Trigger escalating Supernova / Big Bang Finishing explosions
+  triggerSupernovaVisuals(sortedTiles, gridSize, onTileDetonated, onComplete) {
+    if (!sortedTiles || sortedTiles.length === 0) {
+      if (onComplete) onComplete();
+      return;
+    }
+
+    this.clearTrajectoryPreview();
+
+    // 1. Arm all remaining target tiles with glowing energy
+    sortedTiles.forEach(t => {
+      const tileEl = this.tileContainer.querySelector(`.tile[data-id="${t.id}"]`);
+      if (tileEl) {
+        tileEl.classList.add('tile-supernova-arming');
+      }
+    });
+
+    const total = sortedTiles.length;
+    let index = 0;
+
+    // Detonate sequentially: smallest to largest!
+    const stepInterval = Math.max(90, Math.min(180, Math.floor(1800 / total)));
+
+    const detonateNext = () => {
+      if (index >= total) {
+        // Finishing delay before victory modal
+        setTimeout(() => {
+          if (this.boardEl) this.boardEl.classList.remove('board-big-bang-shake');
+          if (onComplete) onComplete();
+        }, 500);
+        return;
+      }
+
+      const tileData = sortedTiles[index];
+      const isFinal = index === total - 1;
+      const progress = total > 1 ? index / (total - 1) : 1;
+
+      const tileEl = this.tileContainer.querySelector(`.tile[data-id="${tileData.id}"]`);
+      if (tileEl) {
+        tileEl.classList.remove('tile-supernova-arming');
+        tileEl.classList.add('tile-big-bang-exploding');
+        setTimeout(() => {
+          if (tileEl && tileEl.parentNode) tileEl.parentNode.removeChild(tileEl);
+        }, 400);
+      }
+
+      // Escalating particle blasts: more particles and higher speed for larger tiles!
+      this.createSupernovaParticles(tileData.row, tileData.col, tileData.value, gridSize, progress, isFinal);
+
+      if (isFinal && this.boardEl) {
+        this.boardEl.classList.add('board-big-bang-shake');
+      }
+
+      if (onTileDetonated) {
+        onTileDetonated(tileData, index, total, isFinal, progress);
+      }
+
+      index++;
+      setTimeout(detonateNext, isFinal ? 350 : stepInterval);
+    };
+
+    // Short initial arming suspense (250ms) then begin cascade
+    setTimeout(detonateNext, 250);
+  }
+
+  createSupernovaParticles(row, col, value, gridSize, progress, isFinal) {
+    if (!this.ctx || !this.canvas) return;
+    this.resizeCanvas();
+
+    const cellW = this.canvas.width / gridSize;
+    const cellH = this.canvas.height / gridSize;
+    const centerX = col * cellW + cellW / 2;
+    const centerY = row * cellH + cellH / 2;
+
+    const colors = isFinal
+      ? ['#00f0ff', '#ffffff', '#ffd600', '#ff007f', '#a855f7']
+      : ['#ffd600', '#06b6d4', '#ec4899', '#ffffff', '#10b981'];
+
+    // Escalating particle count: from 32 up to 120 particles!
+    const count = isFinal ? 120 : Math.floor(32 + progress * 48);
+
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = (2.5 + progress * 4) + Math.random() * (4.5 + progress * 6);
+      this.particles.push({
+        x: centerX + (Math.random() - 0.5) * (cellW * 0.3),
+        y: centerY + (Math.random() - 0.5) * (cellH * 0.3),
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: (3 + progress * 3) + Math.random() * (4 + progress * 4),
+        color: colors[Math.floor(Math.random() * colors.length)],
+        alpha: 1,
+        decay: (isFinal ? 0.015 : 0.025) + Math.random() * 0.02,
+        isShard: true,
+        rotation: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 0.4
+      });
+    }
+
+    if (!this.animating) {
+      this.animating = true;
+      requestAnimationFrame(() => this.updateParticles());
+    }
+  }
+
   createImpactSparks(row, col, breakerVal, gridSize) {
     if (!this.ctx || !this.canvas) return;
     this.resizeCanvas();

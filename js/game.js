@@ -22,6 +22,7 @@ class GameEngine {
     this.tileIdCounter = 1;
     this.moveHistory = [];
     this.sessionStartTime = Date.now();
+    this.supernovaFinishing = options.supernovaFinishing !== false;
     
     this.listeners = [];
   }
@@ -738,11 +739,103 @@ class GameEngine {
 
       this.saveState();
       this.emit('stateChange', this.getState());
+
+      // Check Supernova / Big Bang Finishing
+      if (this.supernovaFinishing !== false && !this.isWon && !this.isGameOver) {
+        if (this.checkCriticalMass()) {
+          this.triggerBigBangFinishing();
+        }
+      }
+
       return true;
     } else {
       this.emit('bump');
       return false;
     }
+  }
+
+  // Peak 8-piece expansion potential before complete elimination (<= 16)
+  getPeak8Pieces(value) {
+    if (value <= 128) return 0; // Divided by 8: <= 16 -> eliminates immediately!
+    if (value <= 1024) return 8; // Divided by 8: <= 128, which eliminates on subsequent 8-hit
+    if (value <= 2048) return 64; // 8 * 8 = 64
+    return 512; // >= 4096
+  }
+
+  // Check if remaining target tiles can never possibly overflow or fill the grid
+  checkCriticalMass() {
+    const targets = [];
+    for (let r = 0; r < this.gridSize; r++) {
+      for (let c = 0; c < this.gridSize; c++) {
+        const cell = this.grid[r][c];
+        if (cell && cell.type === 'target') {
+          targets.push(cell);
+        }
+      }
+    }
+
+    // If no targets remain, level is already won normally
+    if (targets.length === 0) return false;
+
+    const totalCells = this.gridSize * this.gridSize;
+    let totalMaxPieces = 1; // 1 for the breaker tile
+
+    for (const t of targets) {
+      totalMaxPieces += this.getPeak8Pieces(t.value);
+    }
+
+    return totalMaxPieces < totalCells;
+  }
+
+  // Execute Supernova / Big Bang Finishing with escalating explosions
+  triggerBigBangFinishing() {
+    const targets = [];
+    for (let r = 0; r < this.gridSize; r++) {
+      for (let c = 0; c < this.gridSize; c++) {
+        const cell = this.grid[r][c];
+        if (cell && cell.type === 'target') {
+          targets.push({ ...cell, row: r, col: c });
+        }
+      }
+    }
+
+    if (targets.length === 0) return false;
+
+    // Escalating sequence: smallest tiles to largest tiles!
+    targets.sort((a, b) => a.value - b.value);
+
+    let totalGain = 0;
+    targets.forEach(t => {
+      // Award full elimination points for all remaining tiles (val * 8 equivalent)
+      const gain = t.value * 8;
+      totalGain += gain;
+      this.score += gain;
+      this.tilesShattered++;
+      this.grid[t.row][t.col] = null;
+    });
+
+    this.isWon = true;
+
+    // Record special Supernova history frame for replay
+    this.recordHistoryFrame({
+      action: { type: 'supernova', tiles: targets },
+      description: `💥 Supernova Big Bang Finishing • Shattered ${targets.length} Tiles!`,
+      scoreGain: totalGain,
+      soundEvent: 'victory'
+    });
+
+    this.saveState();
+    this.emit('stateChange', this.getState());
+    this.emit('supernova', {
+      sortedTiles: targets,
+      scoreGain: totalGain,
+      score: this.score,
+      moves: this.moves,
+      level: this.level,
+      nextValue: Math.pow(2, this.level + 12)
+    });
+
+    return true;
   }
 
   // Check if any valid move exists
@@ -1070,7 +1163,8 @@ class GameEngine {
           grid: f.state && f.state.grid ? f.state.grid.map(row => row.map(c => c ? { ...c } : null)) : []
         }
       })) : [],
-      sessionStartTime: this.sessionStartTime
+      sessionStartTime: this.sessionStartTime,
+      supernovaFinishing: this.supernovaFinishing !== false
     };
   }
 
@@ -1105,6 +1199,7 @@ class GameEngine {
       return f;
     });
     this.sessionStartTime = state.sessionStartTime || Date.now();
+    this.supernovaFinishing = state.supernovaFinishing !== undefined ? state.supernovaFinishing : true;
     if (this.moveHistory.length === 0 && !this.isWon && !this.isGameOver) {
       this.recordHistoryFrame({
         action: { type: 'init' },

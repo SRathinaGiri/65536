@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const toggleDpad = document.getElementById('toggleDpad');
   const toggleTrajectoryPreview = document.getElementById('toggleTrajectoryPreview');
   const toggleTrajectoryCompass = document.getElementById('toggleTrajectoryCompass');
+  const toggleSupernovaFinishing = document.getElementById('toggleSupernovaFinishing');
   const trajectoryCompass = document.getElementById('trajectoryCompass');
   const chipOutcomeUp = document.getElementById('chipOutcomeUp');
   const chipOutcomeLeft = document.getElementById('chipOutcomeLeft');
@@ -109,7 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const game = new GameEngine({
     gridSize: settings.gridSize,
     breakerValues: breakerValues,
-    divisionMode: settings.divisionMode
+    divisionMode: settings.divisionMode,
+    supernovaFinishing: settings.supernovaFinishing !== false
   });
 
   const renderer = new BoardRenderer(boardEl, canvasEl);
@@ -601,10 +603,39 @@ document.addEventListener('DOMContentLoaded', () => {
     if (winNextTargetEl) {
       winNextTargetEl.textContent = data.nextValue ? data.nextValue.toLocaleString() : 'MAX';
     }
+    const badge = document.getElementById('winSupernovaBadge');
+    if (badge) badge.style.display = 'none';
     try {
       window.storageManager.saveLastReplay(game.getReplayData());
     } catch (e) {}
     winModal.classList.add('active');
+  });
+
+  game.on('supernova', (data) => {
+    showToast('💥 Supernova Big Bang Finishing! (Grid overflow impossible)');
+    showScoreGained(data.scoreGain);
+
+    renderer.triggerSupernovaVisuals(
+      data.sortedTiles,
+      game.gridSize,
+      (tile, idx, total, isFinal, progress) => {
+        window.soundFX.playSupernovaStep(progress, isFinal);
+      },
+      () => {
+        window.soundFX.playVictory();
+        winScoreEl.textContent = data.score.toLocaleString();
+        winMovesEl.textContent = data.moves;
+        if (winNextTargetEl) {
+          winNextTargetEl.textContent = data.nextValue ? data.nextValue.toLocaleString() : 'MAX';
+        }
+        const badge = document.getElementById('winSupernovaBadge');
+        if (badge) badge.style.display = 'block';
+        try {
+          window.storageManager.saveLastReplay(game.getReplayData());
+        } catch (e) {}
+        winModal.classList.add('active');
+      }
+    );
   });
 
   if (winNextLevelBtn) {
@@ -695,6 +726,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (toggleTrajectoryCompass) {
       toggleTrajectoryCompass.checked = current.compassEnabled !== false;
     }
+    if (toggleSupernovaFinishing) {
+      toggleSupernovaFinishing.checked = current.supernovaFinishing !== false;
+    }
     settingsModal.classList.add('active');
   });
 
@@ -705,10 +739,12 @@ document.addEventListener('DOMContentLoaded', () => {
       divisionMode: 'fission',
       dpadEnabled: toggleDpad.checked,
       trajectoryPreview: toggleTrajectoryPreview ? toggleTrajectoryPreview.checked : true,
-      compassEnabled: toggleTrajectoryCompass ? toggleTrajectoryCompass.checked : true
+      compassEnabled: toggleTrajectoryCompass ? toggleTrajectoryCompass.checked : true,
+      supernovaFinishing: toggleSupernovaFinishing ? toggleSupernovaFinishing.checked : true
     };
     window.storageManager.saveSettings(newSettings);
     settings = newSettings;
+    game.supernovaFinishing = newSettings.supernovaFinishing !== false;
     applySettingsClasses();
     settingsModal.classList.remove('active');
 
@@ -1081,7 +1117,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Local-first Service Worker registration & version management
-  const APP_VERSION = '1.24';
+  const APP_VERSION = '1.25';
   console.log(`%c[65536]%c Local-first PWA v${APP_VERSION} active`, 'color:#8b5cf6;font-weight:bold;', 'color:#00f0ff;font-weight:bold;');
 
   if ('serviceWorker' in navigator) {

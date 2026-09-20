@@ -97,12 +97,13 @@ class StorageManager {
         breakerSet: 3, // 3: [2, 4, 8], 4: [2, 4, 8, 16]
         dpadEnabled: false,
         trajectoryPreview: true,
-        compassEnabled: true
+        compassEnabled: true,
+        supernovaFinishing: true
       };
       const saved = localStorage.getItem(this.prefix + 'settings');
       return saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
     } catch (e) {
-      return { gridSize: 8, breakerSet: 3, dpadEnabled: false, trajectoryPreview: true, compassEnabled: true };
+      return { gridSize: 8, breakerSet: 3, dpadEnabled: false, trajectoryPreview: true, compassEnabled: true, supernovaFinishing: true };
     }
   }
 
