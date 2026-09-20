@@ -38,6 +38,13 @@ class BoardRenderer {
     }
     this.boardEl.appendChild(gridBackground);
 
+    // Create trajectory SVG overlay for collision & path previews
+    this.trajectoryOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    this.trajectoryOverlay.setAttribute('class', 'trajectory-overlay');
+    this.trajectoryOverlay.setAttribute('viewBox', '0 0 100 100');
+    this.trajectoryOverlay.setAttribute('preserveAspectRatio', 'none');
+    this.boardEl.appendChild(this.trajectoryOverlay);
+
     // Create tile container
     this.tileContainer = document.createElement('div');
     this.tileContainer.className = 'tile-container';
@@ -45,6 +52,7 @@ class BoardRenderer {
   }
 
   render(state) {
+    this.clearTrajectoryPreview();
     const { grid, gridSize } = state;
     if (!this.tileContainer || this.currentGridSize !== gridSize) {
       this.currentGridSize = gridSize;
@@ -148,6 +156,128 @@ class BoardRenderer {
         <span class="tile-number">${tile.value.toLocaleString()}</span>
         ${isSmashable ? '<span class="hammer-smash-indicator">🔨 BREAK</span>' : '<span class="hammer-immune-indicator">🛡️</span>'}
       `;
+    }
+  }
+
+  clearTrajectoryPreview() {
+    if (this.trajectoryOverlay) {
+      this.trajectoryOverlay.innerHTML = '';
+    }
+    if (this.tileContainer) {
+      this.tileContainer.querySelectorAll('.tile-target-locked').forEach(el => {
+        el.classList.remove('tile-target-locked');
+        el.style.removeProperty('--target-lock-color');
+      });
+      this.tileContainer.querySelectorAll('.collision-preview-badge').forEach(el => {
+        el.remove();
+      });
+    }
+    if (this.boardEl) {
+      this.boardEl.querySelectorAll('.wall-preview-marker').forEach(el => {
+        el.remove();
+      });
+    }
+  }
+
+  renderTrajectoryPreview(previewData) {
+    this.clearTrajectoryPreview();
+    if (!previewData || !previewData.valid || !this.trajectoryOverlay) return;
+
+    const gridSize = this.currentGridSize || 8;
+    const step = 100 / gridSize;
+
+    const { breakerStart, breakerEnd, collision, hitWall, breakerPath } = previewData;
+    if (!breakerStart) return;
+    const breakerVal = breakerStart.value;
+
+    const themeColors = {
+      2: { stroke: '#ff1744', glow: 'rgba(255, 23, 68, 0.75)', fill: '#ffebee' },
+      4: { stroke: '#ffd600', glow: 'rgba(255, 214, 0, 0.85)', fill: '#fffde7' },
+      8: { stroke: '#00f0ff', glow: 'rgba(0, 240, 255, 0.85)', fill: '#e0f7fa' },
+      16: { stroke: '#00ff66', glow: 'rgba(0, 255, 102, 0.85)', fill: '#e8f5e9' }
+    };
+    const theme = themeColors[breakerVal] || themeColors[2];
+
+    const startX = (breakerStart.col + 0.5) * step;
+    const startY = (breakerStart.row + 0.5) * step;
+
+    const destCol = collision ? collision.collisionCell.col : breakerEnd.col;
+    const destRow = collision ? collision.collisionCell.row : breakerEnd.row;
+
+    const endX = (destCol + 0.5) * step;
+    const endY = (destRow + 0.5) * step;
+
+    // 1. Defs for glow filter
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    defs.innerHTML = `
+      <filter id="laserGlow" x="-50%" y="-50%" width="200%" height="200%">
+        <feDropShadow dx="0" dy="0" stdDeviation="1.2" flood-color="${theme.stroke}" flood-opacity="0.9" />
+        <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="${theme.stroke}" flood-opacity="0.5" />
+      </filter>
+    `;
+    this.trajectoryOverlay.appendChild(defs);
+
+    // 2. Traversed cell path tiles
+    if (breakerPath && breakerPath.length > 1) {
+      breakerPath.forEach(pt => {
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', `${pt.col * step + 1}`);
+        rect.setAttribute('y', `${pt.row * step + 1}`);
+        rect.setAttribute('width', `${step - 2}`);
+        rect.setAttribute('height', `${step - 2}`);
+        rect.setAttribute('rx', '2.5');
+        rect.setAttribute('fill', theme.glow);
+        rect.setAttribute('opacity', '0.12');
+        this.trajectoryOverlay.appendChild(rect);
+      });
+    }
+
+    // 3. Laser Beam Line
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', `${startX}`);
+    line.setAttribute('y1', `${startY}`);
+    line.setAttribute('x2', `${endX}`);
+    line.setAttribute('y2', `${endY}`);
+    line.setAttribute('stroke', theme.stroke);
+    line.setAttribute('stroke-width', '1.6');
+    line.setAttribute('stroke-dasharray', '2 1.5');
+    line.setAttribute('filter', 'url(#laserGlow)');
+    line.setAttribute('class', 'trajectory-laser-line');
+    this.trajectoryOverlay.appendChild(line);
+
+    // 4. Direction arrowhead / pulse indicator near destination
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', `${endX}`);
+    circle.setAttribute('cy', `${endY}`);
+    circle.setAttribute('r', '1.8');
+    circle.setAttribute('fill', theme.stroke);
+    circle.setAttribute('filter', 'url(#laserGlow)');
+    this.trajectoryOverlay.appendChild(circle);
+
+    // 5. Target Lock or Wall Bounce
+    if (collision) {
+      const targetTileEl = this.tileContainer.querySelector(`.tile[data-id="${collision.targetId}"]`);
+      if (targetTileEl) {
+        targetTileEl.classList.add('tile-target-locked');
+        targetTileEl.style.setProperty('--target-lock-color', theme.stroke);
+
+        const badge = document.createElement('div');
+        badge.className = `collision-preview-badge ${collision.eliminated ? 'badge-eliminated' : 'badge-divide'}`;
+        if (collision.eliminated) {
+          badge.innerHTML = `<span class="badge-icon">💥</span> Cleared! <small>+${collision.scoreGain.toLocaleString()}</small>`;
+        } else {
+          badge.innerHTML = `<span class="badge-icon">÷${collision.breakerValue}</span> ➔ <strong>${collision.newValue}</strong> <span class="badge-pieces">(${collision.piecesCount} pcs)</span>`;
+        }
+        targetTileEl.appendChild(badge);
+      }
+    } else if (hitWall) {
+      const wallMarker = document.createElement('div');
+      wallMarker.className = 'wall-preview-marker';
+      wallMarker.style.width = `${step}%`;
+      wallMarker.style.height = `${step}%`;
+      wallMarker.style.transform = `translate(${breakerEnd.col * 100}%, ${breakerEnd.row * 100}%)`;
+      wallMarker.innerHTML = `<div class="wall-marker-inner"><span>Wall</span></div>`;
+      this.boardEl.appendChild(wallMarker);
     }
   }
 

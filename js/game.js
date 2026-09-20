@@ -578,6 +578,61 @@ class GameEngine {
                   this.score += prevVal * 4;
                   this.tilesShattered += 1;
                 }
+              } else if (divisor === 16) {
+                // Breaker 16: 16 pieces (value ÷ 16)
+                if (newVal <= 16) {
+                  numberTile.isEliminated = true;
+                  this.grid[nextR][nextC] = null;
+                  this.tilesShattered += 16;
+                  this.score += prevVal * 16;
+                  interactionData.eliminated = true;
+                  interactionData.isBonus16 = true;
+                } else {
+                  this.grid[nextR][nextC] = null;
+
+                  const surroundingDirs16 = [
+                    [-1, -1], [-1, 0], [-1, 1],
+                    [0, -1],           [0, 1],
+                    [1, -1],  [1, 0],  [1, 1],
+                    [-2, 0], [2, 0], [0, -2], [0, 2],
+                    [-2, -1], [-2, 1], [2, -1], [2, 1]
+                  ];
+
+                  surroundingDirs16.forEach(([dr, dc]) => {
+                    const nr = nextR + dr;
+                    const nc = nextC + dc;
+
+                    if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
+                      if (this.grid[nr][nc] !== null) {
+                        this.pushTileOutward(nr, nc, dr, dc);
+                      }
+
+                      if (this.grid[nr][nc] === null) {
+                        const piece = this.addTile(nr, nc, newVal, 'target');
+                        piece.justDivided = true;
+                        interactedTiles.add(piece.id);
+                      } else {
+                        const spot = this.findNearestEmptyCell(nextR, nextC);
+                        if (spot) {
+                          const piece = this.addTile(spot.r, spot.c, newVal, 'target');
+                          piece.justDivided = true;
+                          interactedTiles.add(piece.id);
+                        }
+                      }
+                    } else {
+                      const spot = this.findNearestEmptyCell(nextR, nextC);
+                      if (spot) {
+                        const piece = this.addTile(spot.r, spot.c, newVal, 'target');
+                        piece.justDivided = true;
+                        interactedTiles.add(piece.id);
+                      }
+                    }
+                  });
+
+                  this.score += prevVal * 16;
+                  this.tilesShattered += 1;
+                  interactionData.isBonus16 = true;
+                }
               } else {
                 // Breaker 2: 2 pieces (value ÷ 2)
                 if (newVal <= 16) {
@@ -748,6 +803,198 @@ class GameEngine {
     }
 
     return true; // No empty cells and no possible breaker-target collisions
+  }
+
+  // Pure non-mutating simulation of a move in 'up' | 'down' | 'left' | 'right'
+  simulateMove(direction) {
+    if (this.isWon || this.isGameOver) {
+      return {
+        direction,
+        valid: false,
+        moved: false,
+        reason: 'game_ended'
+      };
+    }
+
+    const vectors = {
+      up: { dr: -1, dc: 0 },
+      down: { dr: 1, dc: 0 },
+      left: { dr: 0, dc: -1 },
+      right: { dr: 0, dc: 1 }
+    };
+
+    const vector = vectors[direction];
+    if (!vector) {
+      return { direction, valid: false, moved: false, reason: 'invalid_direction' };
+    }
+
+    // Locate active breaker
+    const breaker = this.grid.flat().find(t => t && t.type === 'breaker');
+    if (!breaker) {
+      return { direction, valid: false, moved: false, reason: 'no_breaker' };
+    }
+
+    // Clone grid with deep cell clones
+    const simGrid = this.grid.map((row, r) =>
+      row.map((cell, c) => (cell ? { ...cell, row: r, col: c } : null))
+    );
+
+    const rows = [];
+    const cols = [];
+    for (let i = 0; i < this.gridSize; i++) {
+      rows.push(i);
+      cols.push(i);
+    }
+    if (vector.dr === 1) rows.reverse();
+    if (vector.dc === 1) cols.reverse();
+
+    let moved = false;
+    let collision = null;
+    let breakerMoved = false;
+    const breakerPath = [{ row: breaker.row, col: breaker.col }];
+    const interactedTiles = new Set();
+
+    // Map initial target positions
+    const initialTargets = new Map();
+    this.grid.forEach(row => {
+      row.forEach(c => {
+        if (c && c.type === 'target') {
+          initialTargets.set(c.id, { row: c.row, col: c.col, value: c.value });
+        }
+      });
+    });
+
+    // Run exact traversal simulation
+    rows.forEach(r => {
+      cols.forEach(c => {
+        const current = simGrid[r][c];
+        if (!current) return;
+
+        let curR = r;
+        let curC = c;
+
+        while (true) {
+          const nextR = curR + vector.dr;
+          const nextC = curC + vector.dc;
+
+          // Boundary check
+          if (nextR < 0 || nextR >= this.gridSize || nextC < 0 || nextC >= this.gridSize) {
+            break;
+          }
+
+          const target = simGrid[nextR][nextC];
+
+          if (!target) {
+            // Slide into empty cell
+            simGrid[nextR][nextC] = current;
+            simGrid[curR][curC] = null;
+            current.row = nextR;
+            current.col = nextC;
+            curR = nextR;
+            curC = nextC;
+            moved = true;
+            if (current.id === breaker.id) {
+              breakerMoved = true;
+              breakerPath.push({ row: nextR, col: nextC });
+            }
+          } else {
+            // Check interaction: Breaker vs Target
+            const isBreakerVsTarget =
+              (current.type === 'breaker' && target.type === 'target') ||
+              (current.type === 'target' && target.type === 'breaker');
+
+            if (isBreakerVsTarget && !interactedTiles.has(current.id) && !interactedTiles.has(target.id)) {
+              const simBreaker = current.type === 'breaker' ? current : target;
+              const simTarget = current.type === 'target' ? current : target;
+
+              const prevVal = simTarget.value;
+              const divisor = simBreaker.value;
+              const newVal = Math.floor(prevVal / divisor);
+              const willEliminate = newVal <= 16;
+              const initialTargetPos = initialTargets.get(simTarget.id) || { row: simTarget.row, col: simTarget.col };
+
+              const piecesCount = divisor === 16 ? 16 : (divisor === 8 ? 8 : (divisor === 4 ? 4 : 2));
+
+              collision = {
+                breakerId: simBreaker.id,
+                breakerValue: divisor,
+                targetId: simTarget.id,
+                targetInitialPos: initialTargetPos,
+                targetPreCollisionPos: { row: simTarget.row, col: simTarget.col },
+                collisionCell: { row: nextR, col: nextC },
+                oldValue: prevVal,
+                newValue: newVal,
+                eliminated: willEliminate,
+                piecesCount: piecesCount,
+                scoreGain: prevVal * divisor
+              };
+
+              if (current.id === breaker.id) {
+                breakerPath.push({ row: nextR, col: nextC });
+                breakerMoved = true;
+              }
+
+              simGrid[simBreaker.row][simBreaker.col] = null;
+              simGrid[curR][curC] = null;
+              interactedTiles.add(simBreaker.id);
+              interactedTiles.add(simTarget.id);
+              moved = true;
+            }
+            break;
+          }
+        }
+      });
+    });
+
+    const breakerEndPos = breakerPath[breakerPath.length - 1];
+
+    // Check if breaker hit the outer wall
+    let hitWall = false;
+    if (!collision) {
+      if (
+        (vector.dr === -1 && breakerEndPos.row === 0) ||
+        (vector.dr === 1 && breakerEndPos.row === this.gridSize - 1) ||
+        (vector.dc === -1 && breakerEndPos.col === 0) ||
+        (vector.dc === 1 && breakerEndPos.col === this.gridSize - 1)
+      ) {
+        hitWall = true;
+      }
+    }
+
+    // Fission risk calculation: if collision occurs and does not eliminate
+    let fissionRisk = null;
+    if (collision && !collision.eliminated) {
+      const emptyCount = simGrid.flat().filter(cell => cell === null).length;
+      fissionRisk = {
+        pieces: collision.piecesCount,
+        emptyCellsAvailable: emptyCount,
+        isCrowded: emptyCount <= collision.piecesCount + 2,
+        isSevere: emptyCount <= collision.piecesCount
+      };
+    }
+
+    return {
+      direction,
+      valid: moved,
+      moved,
+      breakerMoved,
+      breakerStart: { row: breaker.row, col: breaker.col, value: breaker.value },
+      breakerEnd: breakerEndPos,
+      breakerPath,
+      collision,
+      hitWall,
+      fissionRisk
+    };
+  }
+
+  // Pre-calculate preview outcomes for all 4 directions
+  simulateAllDirections() {
+    return {
+      up: this.simulateMove('up'),
+      down: this.simulateMove('down'),
+      left: this.simulateMove('left'),
+      right: this.simulateMove('right')
+    };
   }
 
   getState() {

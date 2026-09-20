@@ -47,6 +47,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectStartLevel = document.getElementById('selectStartLevel');
   const selectBreakerSet = document.getElementById('selectBreakerSet');
   const toggleDpad = document.getElementById('toggleDpad');
+  const toggleTrajectoryPreview = document.getElementById('toggleTrajectoryPreview');
+  const toggleTrajectoryCompass = document.getElementById('toggleTrajectoryCompass');
+  const trajectoryCompass = document.getElementById('trajectoryCompass');
+  const chipOutcomeUp = document.getElementById('chipOutcomeUp');
+  const chipOutcomeLeft = document.getElementById('chipOutcomeLeft');
+  const chipOutcomeRight = document.getElementById('chipOutcomeRight');
+  const chipOutcomeDown = document.getElementById('chipOutcomeDown');
   const saveSettingsBtn = document.getElementById('saveSettingsBtn');
 
   // Win/Loss elements
@@ -71,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Load Settings
-  const settings = window.storageManager.getSettings();
+  let settings = window.storageManager.getSettings();
   const breakerValues = settings.breakerSet === 4 ? [2, 4, 8, 16] : [2, 4, 8];
 
   // Initialize Game, Renderer, Input
@@ -84,11 +91,79 @@ document.addEventListener('DOMContentLoaded', () => {
   const renderer = new BoardRenderer(boardEl, canvasEl);
   const input = new InputManager(boardEl);
   if (dpadContainer) input.bindDpad(dpadContainer);
+  if (trajectoryCompass) input.bindCompass(trajectoryCompass);
 
-  // Apply D-pad visibility
+  // Apply D-pad and Compass visibility
   if (dpadContainer) {
     dpadContainer.style.display = settings.dpadEnabled ? 'flex' : 'none';
   }
+
+  function applySettingsClasses() {
+    if (boardEl) {
+      if (settings.trajectoryPreview === false) {
+        boardEl.classList.add('hide-trajectory-preview');
+      } else {
+        boardEl.classList.remove('hide-trajectory-preview');
+      }
+    }
+    if (trajectoryCompass) {
+      if (settings.compassEnabled === false) {
+        trajectoryCompass.classList.add('hide-trajectory-compass');
+      } else {
+        trajectoryCompass.classList.remove('hide-trajectory-compass');
+        updateCompassOutcomes();
+      }
+    }
+  }
+
+  function updateCompassOutcomes() {
+    if (!trajectoryCompass || !game || settings.compassEnabled === false) return;
+    if (game.isWon || game.isGameOver) {
+      ['Up', 'Down', 'Left', 'Right'].forEach(dir => {
+        const el = document.getElementById(`chipOutcome${dir}`);
+        if (el) el.textContent = '—';
+      });
+      return;
+    }
+
+    const simResults = game.simulateAllDirections();
+    const dirMap = {
+      up: chipOutcomeUp,
+      down: chipOutcomeDown,
+      left: chipOutcomeLeft,
+      right: chipOutcomeRight
+    };
+
+    for (const [dir, chipEl] of Object.entries(dirMap)) {
+      if (!chipEl) continue;
+      const btn = chipEl.closest('.compass-chip');
+      const res = simResults[dir];
+
+      if (btn) {
+        btn.classList.remove('chip-collision', 'chip-eliminated', 'chip-wall', 'chip-disabled');
+      }
+
+      if (!res || !res.valid) {
+        chipEl.textContent = '—';
+        if (btn) btn.classList.add('chip-disabled');
+      } else if (res.collision) {
+        if (res.collision.eliminated) {
+          chipEl.innerHTML = `💥 <strong>Clear</strong>`;
+          if (btn) btn.classList.add('chip-eliminated');
+        } else {
+          chipEl.innerHTML = `÷${res.collision.breakerValue}➔<strong>${res.collision.newValue}</strong>`;
+          if (btn) btn.classList.add('chip-collision');
+        }
+      } else if (res.hitWall) {
+        chipEl.textContent = 'Wall';
+        if (btn) btn.classList.add('chip-wall');
+      } else {
+        chipEl.textContent = 'Slide';
+      }
+    }
+  }
+
+  applySettingsClasses();
 
   // Audio mute button and settings synchronization
   function updateSoundButton() {
@@ -202,6 +277,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Undo button state
     undoBtn.disabled = !state.canUndo;
+
+    // Refresh directional trajectory compass outcomes
+    updateCompassOutcomes();
   });
 
   // Hammer Mode implementation (Only tiles <= 256)
@@ -430,7 +508,36 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Input events
+  input.on('previewMove', (direction) => {
+    if (hammerMode || warpMode) return;
+
+    if (trajectoryCompass && settings.compassEnabled !== false) {
+      trajectoryCompass.querySelectorAll('.compass-chip').forEach(btn => {
+        if (btn.getAttribute('data-dir') === direction) {
+          btn.classList.add('chip-active');
+        } else {
+          btn.classList.remove('chip-active');
+        }
+      });
+    }
+
+    if (settings.trajectoryPreview !== false) {
+      const sim = game.simulateMove(direction);
+      renderer.renderTrajectoryPreview(sim);
+    }
+  });
+
+  input.on('clearPreview', () => {
+    renderer.clearTrajectoryPreview();
+    if (trajectoryCompass) {
+      trajectoryCompass.querySelectorAll('.compass-chip').forEach(btn => {
+        btn.classList.remove('chip-active');
+      });
+    }
+  });
+
   input.on('move', (direction) => {
+    renderer.clearTrajectoryPreview();
     if (tutorialActive && tutorialStep === 2) {
       dismissTutorial();
     }
@@ -438,11 +545,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   input.on('undo', () => {
+    renderer.clearTrajectoryPreview();
     game.undo();
   });
 
   // Controls buttons
   undoBtn.addEventListener('click', () => {
+    renderer.clearTrajectoryPreview();
     game.undo();
   });
 
@@ -477,6 +586,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     selectBreakerSet.value = current.breakerSet;
     toggleDpad.checked = current.dpadEnabled;
+    if (toggleTrajectoryPreview) {
+      toggleTrajectoryPreview.checked = current.trajectoryPreview !== false;
+    }
+    if (toggleTrajectoryCompass) {
+      toggleTrajectoryCompass.checked = current.compassEnabled !== false;
+    }
     settingsModal.classList.add('active');
   });
 
@@ -485,9 +600,13 @@ document.addEventListener('DOMContentLoaded', () => {
       gridSize: parseInt(selectGridSize.value, 10),
       breakerSet: parseInt(selectBreakerSet.value, 10),
       divisionMode: 'fission',
-      dpadEnabled: toggleDpad.checked
+      dpadEnabled: toggleDpad.checked,
+      trajectoryPreview: toggleTrajectoryPreview ? toggleTrajectoryPreview.checked : true,
+      compassEnabled: toggleTrajectoryCompass ? toggleTrajectoryCompass.checked : true
     };
     window.storageManager.saveSettings(newSettings);
+    settings = newSettings;
+    applySettingsClasses();
     settingsModal.classList.remove('active');
 
     // Apply D-pad
@@ -628,7 +747,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Local-first Service Worker registration & version management
-  const APP_VERSION = '1.10';
+  const APP_VERSION = '1.11';
   console.log(`%c[65536]%c Local-first PWA v${APP_VERSION} active`, 'color:#8b5cf6;font-weight:bold;', 'color:#00f0ff;font-weight:bold;');
 
   if ('serviceWorker' in navigator) {

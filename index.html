@@ -38,7 +38,7 @@
     <header>
       <div class="title-area">
         <h1>65536</h1>
-        <div class="subtitle">Reverse 2048 <span class="version-tag">v1.10</span></div>
+        <div class="subtitle">Reverse 2048 <span class="version-tag">v1.11</span></div>
       </div>
       <div class="header-actions">
         <button id="headerInstallBtn" class="icon-btn" aria-label="Install on this device" title="Install on this device">
@@ -114,6 +114,32 @@
           Numbers never combine together. Keep breaking them down until they reach <strong>≤ 16</strong>, when they <strong>completely vanish</strong> from the board!
         </div>
         <button id="tutorialDoneBtn" class="tutorial-done-btn">Got it, let's play! ▶</button>
+      </div>
+    </div>
+
+    <!-- Directional Trajectory Compass HUD -->
+    <div id="trajectoryCompass" class="trajectory-compass">
+      <div class="compass-header">
+        <span class="compass-title">🎯 Swipe Trajectory:</span>
+        <span class="compass-hint">Drag board to aim • Tap to swipe</span>
+      </div>
+      <div class="compass-chips">
+        <button class="compass-chip" data-dir="up" aria-label="Swipe Up" title="Swipe Up Preview">
+          <span class="chip-dir">▲</span>
+          <span class="chip-outcome" id="chipOutcomeUp">—</span>
+        </button>
+        <button class="compass-chip" data-dir="left" aria-label="Swipe Left" title="Swipe Left Preview">
+          <span class="chip-dir">◀</span>
+          <span class="chip-outcome" id="chipOutcomeLeft">—</span>
+        </button>
+        <button class="compass-chip" data-dir="right" aria-label="Swipe Right" title="Swipe Right Preview">
+          <span class="chip-dir">▶</span>
+          <span class="chip-outcome" id="chipOutcomeRight">—</span>
+        </button>
+        <button class="compass-chip" data-dir="down" aria-label="Swipe Down" title="Swipe Down Preview">
+          <span class="chip-dir">▼</span>
+          <span class="chip-outcome" id="chipOutcomeDown">—</span>
+        </button>
       </div>
     </div>
 
@@ -262,6 +288,16 @@
         <label class="checkbox-group">
           <input type="checkbox" id="toggleDpad">
           <span>Show On-Screen Virtual D-Pad</span>
+        </label>
+
+        <label class="checkbox-group">
+          <input type="checkbox" id="toggleTrajectoryPreview" checked>
+          <span>🎯 Show Trajectory Laser & Target Lock</span>
+        </label>
+
+        <label class="checkbox-group">
+          <input type="checkbox" id="toggleTrajectoryCompass" checked>
+          <span>🧭 Show Swipe Compass HUD</span>
         </label>
 
         <div class="settings-install-section" style="margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; margin-bottom: 8px;">

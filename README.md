@@ -2,7 +2,7 @@
 
 [![Play Online](https://img.shields.io/badge/Play%20Online-srathinagiri.github.io%2F65536-00f0ff?style=for-the-badge&logo=githubpages&logoColor=white)](https://srathinagiri.github.io/65536/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Local--First%20%26%20Offline-10b981?style=for-the-badge&logo=pwa&logoColor=white)](https://srathinagiri.github.io/65536/)
-[![Version](https://img.shields.io/badge/Version-v1.10-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
+[![Version](https://img.shields.io/badge/Version-v1.11-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 An addictive, tactical HTML5 Progressive Web App (PWA) that inverts the iconic **2048** mechanic on its head.
@@ -55,6 +55,14 @@ Built strictly as a **Local-First PWA**:
 ### 4. ✨ Tile Elimination Threshold
 - When any target tile is reduced to **16, 8, 4, or 2** ($\le 16$), it shatters into sparkling particles and **completely disappears from the board**.
 - **Tier Victory**: Eliminate all target tiles to clear the board and advance to the next level!
+
+### 5. 🎯 Real-Time Trajectory & Collision Preview
+- **Eliminates Hidden Traversal Guesswork**: In 2048, sliding tiles follow strict row/column traversal orders that can make movements hard to anticipate.
+- **Laser Aiming Beam**: Drag your finger (or mouse) on the board to preview the breaker's exact flight path before releasing.
+- **Target Lock Reticle & Outcome Badges**: The tile that will be collided with glows with high-contrast targeting crosshairs and displays a live outcome badge (e.g. `÷2 ➔ 512` or `💥 Cleared!`).
+- **Directional Compass HUD**: A 4-way glanceable preview bar above the board reveals the outcome for all four swipe directions (`▲`, `▼`, `◀`, `▶`) at any moment.
+- **Full Keyboard & D-Pad Support**: Hold `Shift + ArrowKey` to preview without moving; hover over on-screen D-Pad buttons for instantaneous path projections.
+- **Configurable in Settings**: Easily toggle between full laser targeting, minimal HUD, or standard play.
 
 ---
 

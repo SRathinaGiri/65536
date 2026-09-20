@@ -5,10 +5,16 @@ class InputManager {
     this.listeners = [];
     this.touchStartX = 0;
     this.touchStartY = 0;
+    this.mouseStartX = 0;
+    this.mouseStartY = 0;
+    this.isMouseDown = false;
+    this.currentPreviewDir = null;
     this.minSwipeDistance = 30; // Minimum px distance for swipe detection
+    this.previewThreshold = 12; // Minimum px distance to start trajectory preview
 
     this.bindKeyboard();
     this.bindTouch();
+    this.bindMouse();
   }
 
   on(event, callback) {
@@ -60,7 +66,19 @@ class InputManager {
       const direction = keyMap[e.code] || keyMap[e.key];
       if (direction) {
         e.preventDefault();
-        this.emit('move', direction);
+        if (e.shiftKey) {
+          // Shift + Arrow = preview without moving
+          this.emit('previewMove', direction);
+        } else {
+          this.emit('clearPreview');
+          this.emit('move', direction);
+        }
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['Shift', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(e.key)) {
+        this.emit('clearPreview');
       }
     });
   }
@@ -74,6 +92,7 @@ class InputManager {
         if (e.touches.length > 1) return;
         this.touchStartX = e.touches[0].clientX;
         this.touchStartY = e.touches[0].clientY;
+        this.currentPreviewDir = null;
       },
       { passive: false }
     );
@@ -84,37 +103,96 @@ class InputManager {
         // Prevent screen scrolling when swiping inside the game board
         if (e.touches.length === 1) {
           e.preventDefault();
-        }
-      },
-      { passive: false }
-    );
+          const dx = e.touches[0].clientX - this.touchStartX;
+          const dy = e.touches[0].clientY - this.touchStartY;
+          const absDx = Math.abs(dx);
+          const absDy = Math.abs(dy);
 
-    this.boardEl.addEventListener(
-      'touchend',
-      (e) => {
-        if (e.changedTouches.length === 0) return;
-
-        const touchEndX = e.changedTouches[0].clientX;
-        const touchEndY = e.changedTouches[0].clientY;
-
-        const dx = touchEndX - this.touchStartX;
-        const dy = touchEndY - this.touchStartY;
-
-        const absDx = Math.abs(dx);
-        const absDy = Math.abs(dy);
-
-        if (Math.max(absDx, absDy) > this.minSwipeDistance) {
-          if (absDx > absDy) {
-            // Horizontal swipe
-            this.emit('move', dx > 0 ? 'right' : 'left');
-          } else {
-            // Vertical swipe
-            this.emit('move', dy > 0 ? 'down' : 'up');
+          if (Math.max(absDx, absDy) >= this.previewThreshold) {
+            const dir = absDx > absDy ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+            if (this.currentPreviewDir !== dir) {
+              this.currentPreviewDir = dir;
+              this.emit('previewMove', dir);
+            }
+          } else if (this.currentPreviewDir) {
+            this.currentPreviewDir = null;
+            this.emit('clearPreview');
           }
         }
       },
       { passive: false }
     );
+
+    const handleTouchEnd = (e) => {
+      if (e.changedTouches && e.changedTouches.length > 0) {
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const dx = touchEndX - this.touchStartX;
+        const dy = touchEndY - this.touchStartY;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+
+        if (Math.max(absDx, absDy) > this.minSwipeDistance) {
+          const dir = absDx > absDy ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+          this.emit('move', dir);
+        }
+      }
+      this.currentPreviewDir = null;
+      this.emit('clearPreview');
+    };
+
+    this.boardEl.addEventListener('touchend', handleTouchEnd, { passive: false });
+    this.boardEl.addEventListener('touchcancel', () => {
+      this.currentPreviewDir = null;
+      this.emit('clearPreview');
+    }, { passive: false });
+  }
+
+  bindMouse() {
+    if (!this.boardEl) return;
+
+    this.boardEl.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return; // Left-click only
+      this.mouseStartX = e.clientX;
+      this.mouseStartY = e.clientY;
+      this.isMouseDown = true;
+      this.currentPreviewDir = null;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!this.isMouseDown) return;
+      const dx = e.clientX - this.mouseStartX;
+      const dy = e.clientY - this.mouseStartY;
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+
+      if (Math.max(absDx, absDy) >= this.previewThreshold) {
+        const dir = absDx > absDy ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+        if (this.currentPreviewDir !== dir) {
+          this.currentPreviewDir = dir;
+          this.emit('previewMove', dir);
+        }
+      } else if (this.currentPreviewDir) {
+        this.currentPreviewDir = null;
+        this.emit('clearPreview');
+      }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (!this.isMouseDown) return;
+      this.isMouseDown = false;
+      const dx = e.clientX - this.mouseStartX;
+      const dy = e.clientY - this.mouseStartY;
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+
+      if (Math.max(absDx, absDy) > this.minSwipeDistance) {
+        const dir = absDx > absDy ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+        this.emit('move', dir);
+      }
+      this.currentPreviewDir = null;
+      this.emit('clearPreview');
+    });
   }
 
   bindDpad(dpadContainer) {
@@ -122,12 +200,40 @@ class InputManager {
     const buttons = dpadContainer.querySelectorAll('[data-dir]');
     buttons.forEach(btn => {
       const dir = btn.getAttribute('data-dir');
-      const triggerMove = (e) => {
+      btn.addEventListener('click', (e) => {
         e.preventDefault();
+        this.emit('clearPreview');
         this.emit('move', dir);
-      };
-      btn.addEventListener('click', triggerMove);
-      btn.addEventListener('touchstart', triggerMove, { passive: false });
+      });
+      btn.addEventListener('pointerenter', () => {
+        this.emit('previewMove', dir);
+      });
+      btn.addEventListener('pointerleave', () => {
+        this.emit('clearPreview');
+      });
+      btn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        this.emit('previewMove', dir);
+      }, { passive: false });
+    });
+  }
+
+  bindCompass(compassContainer) {
+    if (!compassContainer) return;
+    const buttons = compassContainer.querySelectorAll('[data-dir]');
+    buttons.forEach(btn => {
+      const dir = btn.getAttribute('data-dir');
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.emit('clearPreview');
+        this.emit('move', dir);
+      });
+      btn.addEventListener('pointerenter', () => {
+        this.emit('previewMove', dir);
+      });
+      btn.addEventListener('pointerleave', () => {
+        this.emit('clearPreview');
+      });
     });
   }
 }
