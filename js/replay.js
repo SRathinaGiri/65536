@@ -24,7 +24,12 @@ class ReplayController {
   load(replayData) {
     this.pause();
     this.replayData = replayData;
-    this.frames = replayData && Array.isArray(replayData.frames) ? replayData.frames : [];
+    this.frames = (replayData && Array.isArray(replayData.frames) ? replayData.frames : []).map(f => {
+      if (f && f.score === undefined && f.state && f.state.score !== undefined) {
+        return { ...f, score: f.state.score };
+      }
+      return f;
+    });
     this.currentIndex = 0;
     if (this.frames.length > 0) {
       this.renderCurrentFrame(true);

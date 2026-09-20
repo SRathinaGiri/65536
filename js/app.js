@@ -764,15 +764,19 @@ document.addEventListener('DOMContentLoaded', () => {
       onFrameChange: (frame, curIndex, totalCount) => {
         if (!frame) return;
         const maxMove = Math.max(0, totalCount - 1);
+        const scoreVal = (frame.score !== undefined)
+          ? frame.score
+          : (frame.state && frame.state.score !== undefined ? frame.state.score : 0);
         if (replaySubtitle) {
-          replaySubtitle.textContent = `Move ${curIndex} / ${maxMove} • Score: ${frame.score.toLocaleString()}`;
+          replaySubtitle.textContent = `Move ${curIndex} / ${maxMove} • Score: ${(scoreVal || 0).toLocaleString()}`;
         }
         if (replayActionText) {
           replayActionText.textContent = frame.description || `Move ${curIndex}`;
         }
         if (replayScoreDelta) {
-          if (frame.scoreGain > 0) {
-            replayScoreDelta.textContent = `+${frame.scoreGain.toLocaleString()} pts`;
+          const scoreGain = frame.scoreGain || 0;
+          if (scoreGain > 0) {
+            replayScoreDelta.textContent = `+${scoreGain.toLocaleString()} pts`;
             replayScoreDelta.style.display = 'inline';
           } else {
             replayScoreDelta.textContent = '';
@@ -827,17 +831,21 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Activate modal first so layout dimensions are active
+    if (replayModal) {
+      replayModal.classList.add('active');
+    }
+
     if (replayController) {
+      if (replayController.renderer && typeof replayController.renderer.resizeCanvas === 'function') {
+        replayController.renderer.resizeCanvas();
+      }
       replayController.load(dataToLoad);
       if (replayScrubber) {
         replayScrubber.min = 0;
         replayScrubber.max = Math.max(0, dataToLoad.frames.length - 1);
         replayScrubber.value = 0;
       }
-    }
-
-    if (replayModal) {
-      replayModal.classList.add('active');
     }
   }
 
@@ -848,6 +856,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (replayModal) {
       replayModal.classList.remove('active');
     }
+  }
+
+  if (replayModal) {
+    replayModal.addEventListener('click', (e) => {
+      if (e.target === replayModal) {
+        closeReplayModal();
+      }
+    });
   }
 
   if (replayHeaderBtn) {

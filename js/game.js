@@ -33,6 +33,7 @@ class GameEngine {
       timeMs,
       action: data.action || { type: 'unknown' },
       description: data.description || '',
+      score: this.score,
       scoreGain: data.scoreGain || 0,
       soundEvent: data.soundEvent || null,
       state: {
@@ -1097,7 +1098,12 @@ class GameEngine {
     this.lastHammerScore = state.lastHammerScore !== undefined ? state.lastHammerScore : Math.floor(this.score / 25000) * 25000;
     this.warpCharges = state.warpCharges !== undefined ? state.warpCharges : 1;
     this.lastWarpScore = state.lastWarpScore !== undefined ? state.lastWarpScore : Math.floor(this.score / 50000) * 50000;
-    this.moveHistory = state.moveHistory || [];
+    this.moveHistory = (state.moveHistory || []).map(f => {
+      if (f && f.score === undefined && f.state && f.state.score !== undefined) {
+        return { ...f, score: f.state.score };
+      }
+      return f;
+    });
     this.sessionStartTime = state.sessionStartTime || Date.now();
     if (this.moveHistory.length === 0 && !this.isWon && !this.isGameOver) {
       this.recordHistoryFrame({
