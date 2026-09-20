@@ -825,7 +825,15 @@ class GameEngine {
     }
 
     // Phase 2: Endgame Cleanup Phase (all remaining tiles on board are <= 256)
-    if (totalMaxPieces < totalCells) {
+    // Under 8-dividers, all tiles <= 128 (128, 64, 32, 16) shatter directly to 0.
+    // The ONLY tiles that multiply under an 8-breaker are 256 tiles (each makes 8 pieces).
+    const maxAllowed256 = Math.floor((totalCells - 2) / 8);
+    let count256 = 0;
+    for (const t of targets) {
+      if (t.value === 256) count256++;
+    }
+
+    if (count256 <= maxAllowed256) {
       return {
         enabled: true,
         ready: true,
@@ -833,22 +841,23 @@ class GameEngine {
         text: 'READY!',
         excess: 0,
         hasTitan: false,
-        tooltip: '💥 Big Bang READY! Any swipe will ignite the cascade victory!'
+        count256,
+        maxAllowed256,
+        tooltip: '💥 Big Bang READY! All tiles will shatter without overflowing. Any swipe ignites victory!'
       };
     }
 
-    // When all tiles are <= 256, excess is driven by 256 tiles (each contributes at most 8 pieces)
-    const excess = totalMaxPieces - (totalCells - 1);
-    const tilesToReduce = Math.max(1, Math.ceil(excess / 8));
-
+    const tilesToReduce = count256 - maxAllowed256;
     return {
       enabled: true,
       ready: false,
       count: tilesToReduce,
-      text: `${tilesToReduce} ${tilesToReduce === 1 ? 'tile' : 'tiles'}`,
-      excess,
+      text: `${tilesToReduce} of [256]`,
+      excess: tilesToReduce,
       hasTitan: false,
-      tooltip: `Shatter ${tilesToReduce} more ${tilesToReduce === 1 ? 'tile' : 'tiles'} to ignite Supernova Big Bang Finishing!`
+      count256,
+      maxAllowed256,
+      tooltip: `You have ${count256} tiles of 256. Reduce ${tilesToReduce} of them (keep ≤ ${maxAllowed256} on ${this.gridSize}×${this.gridSize}) to ignite Big Bang!`
     };
   }
 
