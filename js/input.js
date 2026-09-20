@@ -225,13 +225,21 @@ class InputManager {
       const dir = btn.getAttribute('data-dir');
       btn.addEventListener('click', (e) => {
         e.preventDefault();
-        this.emit('clearPreview');
-        this.emit('move', dir);
+        if (this.currentPreviewDir === dir) {
+          this.currentPreviewDir = null;
+          this.emit('clearPreview');
+          this.emit('move', dir);
+        } else {
+          this.currentPreviewDir = dir;
+          this.emit('previewMove', dir);
+        }
       });
       btn.addEventListener('pointerenter', () => {
+        this.currentPreviewDir = dir;
         this.emit('previewMove', dir);
       });
       btn.addEventListener('pointerleave', () => {
+        this.currentPreviewDir = null;
         this.emit('clearPreview');
       });
     });

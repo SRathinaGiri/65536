@@ -175,17 +175,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btn) btn.classList.add(`chip-tier-${tier}`);
 
         if (res.collision.eliminated) {
-          chipEl.innerHTML = `<span class="chip-action">💥 Clear</span><small class="chip-occ">${curOcc}→${projOcc}</small>`;
+          chipEl.innerHTML = `<span class="chip-action">💥 Clear</span>`;
         } else {
-          chipEl.innerHTML = `<span class="chip-action">÷${res.collision.breakerValue}➔${res.collision.newValue}</span><small class="chip-occ">${curOcc}→${projOcc}</small>`;
+          chipEl.innerHTML = `<span class="chip-action">÷${res.collision.breakerValue}➔${res.collision.newValue}</span>`;
         }
       } else if (res.hitWall) {
-        const curOcc = res.currentOccupied || 0;
-        chipEl.innerHTML = `<span class="chip-action">Wall</span><small class="chip-occ">${curOcc}</small>`;
+        chipEl.innerHTML = `<span class="chip-action">Wall</span>`;
         if (btn) btn.classList.add('chip-wall');
       } else {
-        const curOcc = res.currentOccupied || 0;
-        chipEl.innerHTML = `<span class="chip-action">Slide</span><small class="chip-occ">${curOcc}</small>`;
+        chipEl.innerHTML = `<span class="chip-action">Slide</span>`;
       }
     }
   }
@@ -822,7 +820,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Local-first Service Worker registration & version management
-  const APP_VERSION = '1.16';
+  const APP_VERSION = '1.17';
   console.log(`%c[65536]%c Local-first PWA v${APP_VERSION} active`, 'color:#8b5cf6;font-weight:bold;', 'color:#00f0ff;font-weight:bold;');
 
   if ('serviceWorker' in navigator) {

@@ -221,11 +221,11 @@ class GameEngine {
     return tile;
   }
 
-  getEmptyCells() {
+  getEmptyCells(grid = this.grid) {
     const cells = [];
     for (let r = 0; r < this.gridSize; r++) {
       for (let c = 0; c < this.gridSize; c++) {
-        if (!this.grid[r][c]) {
+        if (!grid[r][c]) {
           cells.push({ r, c });
         }
       }
@@ -233,8 +233,8 @@ class GameEngine {
     return cells;
   }
 
-  findNearestEmptyCell(targetR, targetC) {
-    const emptyCells = this.getEmptyCells();
+  findNearestEmptyCell(targetR, targetC, grid = this.grid) {
+    const emptyCells = this.getEmptyCells(grid);
     if (emptyCells.length === 0) return null;
 
     // Prioritize adjacent direct neighbors
@@ -243,7 +243,7 @@ class GameEngine {
       (Math.abs(cell.c - targetC) === 1 && cell.r === targetR)
     );
     if (directNeighbors.length > 0) {
-      return directNeighbors[Math.floor(Math.random() * directNeighbors.length)];
+      return directNeighbors[0];
     }
 
     // Sort by Manhattan distance
@@ -256,8 +256,8 @@ class GameEngine {
     return emptyCells[0];
   }
 
-  pushTileOutward(fromR, fromC, dr, dc) {
-    const tileToPush = this.grid[fromR][fromC];
+  pushTileOutward(fromR, fromC, dr, dc, grid = this.grid) {
+    const tileToPush = grid[fromR][fromC];
     if (!tileToPush) return null;
 
     let testR = fromR + dr;
@@ -265,7 +265,7 @@ class GameEngine {
     let targetSpot = null;
 
     while (testR >= 0 && testR < this.gridSize && testC >= 0 && testC < this.gridSize) {
-      if (this.grid[testR][testC] === null) {
+      if (grid[testR][testC] === null) {
         targetSpot = { r: testR, c: testC };
         break;
       }
@@ -274,14 +274,14 @@ class GameEngine {
     }
 
     if (!targetSpot) {
-      targetSpot = this.findNearestEmptyCell(fromR, fromC);
+      targetSpot = this.findNearestEmptyCell(fromR, fromC, grid);
     }
 
     if (targetSpot) {
-      this.grid[targetSpot.r][targetSpot.c] = tileToPush;
+      grid[targetSpot.r][targetSpot.c] = tileToPush;
       tileToPush.row = targetSpot.r;
       tileToPush.col = targetSpot.c;
-      this.grid[fromR][fromC] = null;
+      grid[fromR][fromC] = null;
       return targetSpot;
     }
     return null;
@@ -939,6 +939,111 @@ class GameEngine {
               interactedTiles.add(simBreaker.id);
               interactedTiles.add(simTarget.id);
               moved = true;
+
+              if (willEliminate) {
+                simGrid[nextR][nextC] = null;
+              } else {
+                if (divisor === 8) {
+                  simGrid[nextR][nextC] = null;
+                  const surroundingDirs8 = [
+                    [-1, -1], [-1, 0], [-1, 1],
+                    [0, -1],           [0, 1],
+                    [1, -1],  [1, 0],  [1, 1]
+                  ];
+                  surroundingDirs8.forEach(([dr, dc]) => {
+                    const nr = nextR + dr;
+                    const nc = nextC + dc;
+                    if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
+                      if (simGrid[nr][nc] !== null) {
+                        this.pushTileOutward(nr, nc, dr, dc, simGrid);
+                      }
+                      if (simGrid[nr][nc] === null) {
+                        simGrid[nr][nc] = { row: nr, col: nc, value: newVal, type: 'target', isNewPiece: true };
+                      } else {
+                        const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
+                        if (spot) {
+                          simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
+                        }
+                      }
+                    } else {
+                      const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
+                      if (spot) {
+                        simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
+                      }
+                    }
+                  });
+                } else if (divisor === 4) {
+                  simGrid[nextR][nextC] = null;
+                  const crossDirs4 = [
+                    [-1, 0], [1, 0], [0, -1], [0, 1]
+                  ];
+                  crossDirs4.forEach(([dr, dc]) => {
+                    const nr = nextR + dr;
+                    const nc = nextC + dc;
+                    if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
+                      if (simGrid[nr][nc] !== null) {
+                        this.pushTileOutward(nr, nc, dr, dc, simGrid);
+                      }
+                      if (simGrid[nr][nc] === null) {
+                        simGrid[nr][nc] = { row: nr, col: nc, value: newVal, type: 'target', isNewPiece: true };
+                      } else {
+                        const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
+                        if (spot) {
+                          simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
+                        }
+                      }
+                    } else {
+                      const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
+                      if (spot) {
+                        simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
+                      }
+                    }
+                  });
+                } else if (divisor === 16) {
+                  simGrid[nextR][nextC] = null;
+                  const surroundingDirs16 = [
+                    [-1, -1], [-1, 0], [-1, 1],
+                    [0, -1],           [0, 1],
+                    [1, -1],  [1, 0],  [1, 1],
+                    [-2, 0], [2, 0], [0, -2], [0, 2],
+                    [-2, -1], [-2, 1], [2, -1], [2, 1]
+                  ];
+                  surroundingDirs16.forEach(([dr, dc]) => {
+                    const nr = nextR + dr;
+                    const nc = nextC + dc;
+                    if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
+                      if (simGrid[nr][nc] !== null) {
+                        this.pushTileOutward(nr, nc, dr, dc, simGrid);
+                      }
+                      if (simGrid[nr][nc] === null) {
+                        simGrid[nr][nc] = { row: nr, col: nc, value: newVal, type: 'target', isNewPiece: true };
+                      } else {
+                        const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
+                        if (spot) {
+                          simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
+                        }
+                      }
+                    } else {
+                      const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
+                      if (spot) {
+                        simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
+                      }
+                    }
+                  });
+                } else {
+                  // Breaker 2
+                  simGrid[nextR][nextC] = { row: nextR, col: nextC, value: newVal, type: 'target', isNewPiece: true };
+                  let splitSpot = null;
+                  if (simGrid[curR][curC] === null && (curR !== nextR || curC !== nextC)) {
+                    splitSpot = { r: curR, c: curC };
+                  } else {
+                    splitSpot = this.findNearestEmptyCell(nextR, nextC, simGrid);
+                  }
+                  if (splitSpot) {
+                    simGrid[splitSpot.r][splitSpot.c] = { row: splitSpot.r, col: splitSpot.c, value: newVal, type: 'target', isNewPiece: true };
+                  }
+                }
+              }
             }
             break;
           }
@@ -973,6 +1078,23 @@ class GameEngine {
       };
     }
 
+    // Collect all resulting projected tiles
+    const projectedTiles = [];
+    for (let r = 0; r < this.gridSize; r++) {
+      for (let c = 0; c < this.gridSize; c++) {
+        const cell = simGrid[r][c];
+        if (cell) {
+          projectedTiles.push({
+            row: r,
+            col: c,
+            value: cell.value,
+            type: cell.type,
+            isNewPiece: !!cell.isNewPiece
+          });
+        }
+      }
+    }
+
     // Projected free-space and occupancy impact
     const totalCells = this.gridSize * this.gridSize;
     const currentOccupied = this.grid.flat().filter(cell => cell !== null).length;
@@ -999,7 +1121,8 @@ class GameEngine {
       fissionRisk,
       totalCells,
       currentOccupied,
-      projectedOccupied
+      projectedOccupied,
+      projectedTiles
     };
   }
 

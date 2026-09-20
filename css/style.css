@@ -1172,23 +1172,22 @@ body.warp-targeting .tile {
 
 .collision-preview-badge {
   position: absolute;
-  top: -24px;
+  top: -20px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(15, 23, 42, 0.94);
+  background: rgba(15, 23, 42, 0.95);
   border: 1.5px solid var(--target-lock-color, #00ff66);
   border-radius: 8px;
-  padding: 2.5px 7px;
+  padding: 2.5px 8px;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8), 0 0 10px var(--target-lock-color, rgba(0, 255, 102, 0.4));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.85), 0 0 10px var(--target-lock-color, rgba(0, 255, 102, 0.45));
   pointer-events: none;
   z-index: 40;
   animation: badgePopIn 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 1px;
-  line-height: 1.15;
+  justify-content: center;
+  line-height: 1.2;
   text-align: center;
 }
 
@@ -1202,10 +1201,6 @@ body.warp-targeting .tile {
   color: #00ff66;
 }
 
-.collision-preview-badge.badge-tier-green .badge-impact {
-  color: #a7f3d0;
-}
-
 .collision-preview-badge.badge-tier-amber {
   border-color: #ffb300;
   background: linear-gradient(135deg, rgba(69, 39, 4, 0.96), rgba(15, 23, 42, 0.96));
@@ -1214,10 +1209,6 @@ body.warp-targeting .tile {
 
 .collision-preview-badge.badge-tier-amber .badge-equation {
   color: #ffd600;
-}
-
-.collision-preview-badge.badge-tier-amber .badge-impact {
-  color: #fde68a;
 }
 
 .collision-preview-badge.badge-tier-red {
@@ -1230,21 +1221,85 @@ body.warp-targeting .tile {
   color: #ff5252;
 }
 
-.collision-preview-badge.badge-tier-red .badge-impact {
-  color: #fca5a5;
-  font-weight: 700;
-}
-
 .badge-equation {
-  font-size: 0.66rem;
+  font-size: 0.68rem;
   font-weight: 800;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.25px;
 }
 
-.badge-impact {
-  font-size: 0.56rem;
-  font-weight: 600;
-  color: #cbd5e1;
+/* 50% Transparent Ghost Preview Outcome Tiles */
+.ghost-preview-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 28;
+}
+
+.ghost-preview-tile {
+  position: absolute;
+  padding: 4px;
+  box-sizing: border-box;
+  pointer-events: none;
+  opacity: 0.5;
+  transition: transform 0.12s ease-out;
+  animation: ghostFadeIn 0.15s ease-out forwards;
+}
+
+.ghost-preview-tile .ghost-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  box-sizing: border-box;
+  position: relative;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1.5px dashed rgba(255, 255, 255, 0.45);
+}
+
+.ghost-preview-tile.ghost-new-piece .ghost-inner {
+  border: 2px dashed #00ff66;
+  box-shadow: 0 0 12px rgba(0, 255, 102, 0.6), inset 0 0 8px rgba(0, 255, 102, 0.25);
+  background: rgba(6, 78, 59, 0.75);
+  animation: ghostPulse 1s infinite alternate ease-in-out;
+}
+
+.ghost-preview-tile.ghost-new-piece[style*="--preview-tier: amber"] .ghost-inner {
+  border-color: #ffd600;
+  box-shadow: 0 0 12px rgba(255, 214, 0, 0.6), inset 0 0 8px rgba(255, 214, 0, 0.25);
+  background: rgba(69, 39, 4, 0.75);
+}
+
+.ghost-preview-tile.ghost-new-piece[style*="--preview-tier: red"] .ghost-inner {
+  border-color: #ff1744;
+  box-shadow: 0 0 14px rgba(255, 23, 68, 0.7), inset 0 0 8px rgba(255, 23, 68, 0.3);
+  background: rgba(88, 10, 25, 0.8);
+}
+
+.ghost-preview-tile .ghost-tag {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  font-size: 0.52rem;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #ffffff;
+  padding: 0 4px;
+  border-radius: 3px;
+}
+
+.ghost-preview-tile .tile-number {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
 }
 
 /* Directional Trajectory Compass HUD */
@@ -1367,7 +1422,8 @@ body.warp-targeting .tile {
 .hide-trajectory-preview .trajectory-overlay,
 .hide-trajectory-preview .tile-target-locked,
 .hide-trajectory-preview .tile-target-secondary,
-.hide-trajectory-preview .collision-preview-badge {
+.hide-trajectory-preview .collision-preview-badge,
+.hide-trajectory-preview .ghost-preview-container {
   display: none !important;
 }
 

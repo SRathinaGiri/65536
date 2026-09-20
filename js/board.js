@@ -45,6 +45,11 @@ class BoardRenderer {
     this.trajectoryOverlay.setAttribute('preserveAspectRatio', 'none');
     this.boardEl.appendChild(this.trajectoryOverlay);
 
+    // Create ghost preview container for 50% transparent outcome tiles
+    this.ghostContainer = document.createElement('div');
+    this.ghostContainer.className = 'ghost-preview-container';
+    this.boardEl.appendChild(this.ghostContainer);
+
     // Create tile container
     this.tileContainer = document.createElement('div');
     this.tileContainer.className = 'tile-container';
@@ -162,6 +167,9 @@ class BoardRenderer {
   clearTrajectoryPreview() {
     if (this.trajectoryOverlay) {
       this.trajectoryOverlay.innerHTML = '';
+    }
+    if (this.ghostContainer) {
+      this.ghostContainer.innerHTML = '';
     }
     if (this.tileContainer) {
       this.tileContainer.querySelectorAll('.tile-target-locked, .tile-target-secondary').forEach(el => {
@@ -379,12 +387,7 @@ class BoardRenderer {
               equationText = `${collision.oldValue.toLocaleString()} ÷ ${collision.breakerValue} = ${collision.newValue.toLocaleString()} × ${collision.piecesCount} tiles`;
             }
 
-            const impactText = `Board: ${curOcc} → ${projOcc} occupied${tier === 'red' ? ' ⚠️' : ''}`;
-
-            badge.innerHTML = `
-              <div class="badge-equation">${equationText}</div>
-              <div class="badge-impact">${impactText}</div>
-            `;
+            badge.innerHTML = `<div class="badge-equation">${equationText}</div>`;
             targetTileEl.appendChild(badge);
           }
         }
@@ -410,6 +413,51 @@ class BoardRenderer {
         wallDot.setAttribute('fill', '#94a3b8');
         wallDot.setAttribute('opacity', isAimed ? '0.6' : '0.35');
         this.trajectoryOverlay.appendChild(wallDot);
+      }
+    }
+
+    // 5. Render 50% transparent ghost preview of outcome cells for the active direction
+    if (activeDirection && allSims[activeDirection] && allSims[activeDirection].valid && this.ghostContainer) {
+      const activeSim = allSims[activeDirection];
+      const stepPercent = 100 / gridSize;
+      const { collision } = activeSim;
+
+      let previewTier = 'amber';
+      if (collision) {
+        const totalCells = activeSim.totalCells || (gridSize * gridSize);
+        const curOcc = activeSim.currentOccupied || 0;
+        const projOcc = activeSim.projectedOccupied || curOcc;
+        const remainingEmpty = totalCells - projOcc;
+        if (collision.eliminated) {
+          previewTier = 'green';
+        } else if (
+          collision.piecesCount >= 8 ||
+          (activeSim.fissionRisk && activeSim.fissionRisk.isCrowded) ||
+          remainingEmpty <= 4 ||
+          projOcc >= Math.floor(totalCells * 0.85)
+        ) {
+          previewTier = 'red';
+        }
+      }
+
+      if (Array.isArray(activeSim.projectedTiles)) {
+        activeSim.projectedTiles.forEach(tile => {
+          const ghost = document.createElement('div');
+          ghost.className = `ghost-preview-tile val-${tile.value} ${tile.isNewPiece ? 'ghost-new-piece' : 'ghost-existing-piece'}`;
+          ghost.style.transform = `translate(${tile.col * 100}%, ${tile.row * 100}%)`;
+          ghost.style.width = `${stepPercent}%`;
+          ghost.style.height = `${stepPercent}%`;
+          ghost.style.setProperty('--preview-tier', previewTier);
+
+          const inner = document.createElement('div');
+          inner.className = 'ghost-inner';
+          inner.innerHTML = `
+            ${tile.isNewPiece ? '<span class="ghost-tag">PREVIEW</span>' : ''}
+            <span class="tile-number">${tile.value.toLocaleString()}</span>
+          `;
+          ghost.appendChild(inner);
+          this.ghostContainer.appendChild(ghost);
+        });
       }
     }
   }
