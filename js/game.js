@@ -973,6 +973,19 @@ class GameEngine {
       };
     }
 
+    // Projected free-space and occupancy impact
+    const totalCells = this.gridSize * this.gridSize;
+    const currentOccupied = this.grid.flat().filter(cell => cell !== null).length;
+    let projectedOccupied = currentOccupied;
+
+    if (collision) {
+      if (collision.eliminated) {
+        projectedOccupied = Math.max(0, currentOccupied - 1);
+      } else {
+        projectedOccupied = currentOccupied - 1 + collision.piecesCount;
+      }
+    }
+
     return {
       direction,
       valid: moved,
@@ -983,7 +996,10 @@ class GameEngine {
       breakerPath,
       collision,
       hitWall,
-      fissionRisk
+      fissionRisk,
+      totalCells,
+      currentOccupied,
+      projectedOccupied
     };
   }
 

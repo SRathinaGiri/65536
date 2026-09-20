@@ -140,25 +140,52 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = simResults[dir];
 
       if (btn) {
-        btn.classList.remove('chip-collision', 'chip-eliminated', 'chip-wall', 'chip-disabled');
+        btn.classList.remove(
+          'chip-collision',
+          'chip-eliminated',
+          'chip-wall',
+          'chip-disabled',
+          'chip-tier-green',
+          'chip-tier-amber',
+          'chip-tier-red'
+        );
       }
 
       if (!res || !res.valid) {
         chipEl.textContent = '—';
         if (btn) btn.classList.add('chip-disabled');
       } else if (res.collision) {
+        const totalCells = res.totalCells || (game.gridSize * game.gridSize);
+        const curOcc = res.currentOccupied || 0;
+        const projOcc = res.projectedOccupied || curOcc;
+        const remainingEmpty = totalCells - projOcc;
+
+        let tier = 'amber';
         if (res.collision.eliminated) {
-          chipEl.innerHTML = `💥 <strong>Clear</strong>`;
-          if (btn) btn.classList.add('chip-eliminated');
+          tier = 'green';
+        } else if (
+          res.collision.piecesCount >= 8 ||
+          (res.fissionRisk && res.fissionRisk.isCrowded) ||
+          remainingEmpty <= 4 ||
+          projOcc >= Math.floor(totalCells * 0.85)
+        ) {
+          tier = 'red';
+        }
+
+        if (btn) btn.classList.add(`chip-tier-${tier}`);
+
+        if (res.collision.eliminated) {
+          chipEl.innerHTML = `<span class="chip-action">💥 Clear</span><small class="chip-occ">${curOcc}→${projOcc}</small>`;
         } else {
-          chipEl.innerHTML = `÷${res.collision.breakerValue}➔<strong>${res.collision.newValue}</strong>`;
-          if (btn) btn.classList.add('chip-collision');
+          chipEl.innerHTML = `<span class="chip-action">÷${res.collision.breakerValue}➔${res.collision.newValue}</span><small class="chip-occ">${curOcc}→${projOcc}</small>`;
         }
       } else if (res.hitWall) {
-        chipEl.textContent = 'Wall';
+        const curOcc = res.currentOccupied || 0;
+        chipEl.innerHTML = `<span class="chip-action">Wall</span><small class="chip-occ">${curOcc}</small>`;
         if (btn) btn.classList.add('chip-wall');
       } else {
-        chipEl.textContent = 'Slide';
+        const curOcc = res.currentOccupied || 0;
+        chipEl.innerHTML = `<span class="chip-action">Slide</span><small class="chip-occ">${curOcc}</small>`;
       }
     }
   }
@@ -795,7 +822,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Local-first Service Worker registration & version management
-  const APP_VERSION = '1.15';
+  const APP_VERSION = '1.16';
   console.log(`%c[65536]%c Local-first PWA v${APP_VERSION} active`, 'color:#8b5cf6;font-weight:bold;', 'color:#00f0ff;font-weight:bold;');
 
   if ('serviceWorker' in navigator) {

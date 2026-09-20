@@ -194,13 +194,11 @@ class BoardRenderer {
     const breakerStart = sampleSim.breakerStart;
     const breakerVal = breakerStart.value;
 
-    const themeColors = {
-      2: { stroke: '#ff1744', glow: 'rgba(255, 23, 68, 0.45)' },
-      4: { stroke: '#ffd600', glow: 'rgba(255, 214, 0, 0.45)' },
-      8: { stroke: '#00f0ff', glow: 'rgba(0, 240, 255, 0.45)' },
-      16: { stroke: '#00ff66', glow: 'rgba(0, 255, 102, 0.45)' }
+    const tierColors = {
+      green: { stroke: '#00ff66', glow: 'rgba(0, 255, 102, 0.5)' },
+      amber: { stroke: '#ffb300', glow: 'rgba(255, 179, 0, 0.5)' },
+      red: { stroke: '#ff1744', glow: 'rgba(255, 23, 68, 0.55)' }
     };
-    const theme = themeColors[breakerVal] || themeColors[2];
 
     const cx = (breakerStart.col + 0.5) * step;
     const cy = (breakerStart.row + 0.5) * step;
@@ -304,7 +302,27 @@ class BoardRenderer {
       if (dir === 'right' && x1 >= x2) x1 = x2;
 
       if (isDirectHit) {
-        // --- TARGET COLLISION TRAJECTORY (Neon colored laser to target tile boundary) ---
+        // --- TARGET COLLISION TRAJECTORY ---
+        // Consequence Tier: Green (Guaranteed elimination), Amber (Division), Red (Dangerous expansion)
+        const totalCells = sim.totalCells || (gridSize * gridSize);
+        const curOcc = sim.currentOccupied || 0;
+        const projOcc = sim.projectedOccupied || curOcc;
+        const remainingEmpty = totalCells - projOcc;
+
+        let tier = 'amber';
+        if (collision.eliminated) {
+          tier = 'green';
+        } else if (
+          collision.piecesCount >= 8 ||
+          (sim.fissionRisk && sim.fissionRisk.isCrowded) ||
+          remainingEmpty <= 4 ||
+          projOcc >= Math.floor(totalCells * 0.85)
+        ) {
+          tier = 'red';
+        }
+
+        const theme = tierColors[tier];
+
         // 1. Outer colored glow aura
         const glowLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         glowLine.setAttribute('x1', `${x1}`);
@@ -352,12 +370,21 @@ class BoardRenderer {
 
           if (isAimed || isNeutral) {
             const badge = document.createElement('div');
-            badge.className = `collision-preview-badge ${collision.eliminated ? 'badge-eliminated' : 'badge-divide'}`;
+            badge.className = `collision-preview-badge badge-tier-${tier}`;
+
+            let equationText = '';
             if (collision.eliminated) {
-              badge.innerHTML = `<span class="badge-icon">💥</span> Cleared! <small>+${collision.scoreGain.toLocaleString()}</small>`;
+              equationText = `${collision.oldValue.toLocaleString()} ÷ ${collision.breakerValue} = ${collision.newValue} ➔ 💥 Cleared!`;
             } else {
-              badge.innerHTML = `<span class="badge-icon">÷${collision.breakerValue}</span> ➔ <strong>${collision.newValue}</strong> <span class="badge-pieces">(${collision.piecesCount} pcs)</span>`;
+              equationText = `${collision.oldValue.toLocaleString()} ÷ ${collision.breakerValue} = ${collision.newValue.toLocaleString()} × ${collision.piecesCount} tiles`;
             }
+
+            const impactText = `Board: ${curOcc} → ${projOcc} occupied${tier === 'red' ? ' ⚠️' : ''}`;
+
+            badge.innerHTML = `
+              <div class="badge-equation">${equationText}</div>
+              <div class="badge-impact">${impactText}</div>
+            `;
             targetTileEl.appendChild(badge);
           }
         }
