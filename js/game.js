@@ -787,6 +787,89 @@ class GameEngine {
     return totalMaxPieces < totalCells;
   }
 
+  // Get comprehensive status of Supernova Big Bang Finishing
+  getBigBangStatus() {
+    if (this.supernovaFinishing === false) {
+      return { enabled: false, ready: false, count: null, text: 'Off', tooltip: 'Big Bang Finishing is disabled in Settings' };
+    }
+    if (this.isWon || this.isGameOver) {
+      return { enabled: true, ready: false, count: 0, text: 'Cleared', tooltip: 'Game completed' };
+    }
+
+    const targets = [];
+    for (let r = 0; r < this.gridSize; r++) {
+      for (let c = 0; c < this.gridSize; c++) {
+        const cell = this.grid[r][c];
+        if (cell && cell.type === 'target') {
+          targets.push(cell);
+        }
+      }
+    }
+
+    if (targets.length === 0) {
+      return { enabled: true, ready: false, count: 0, text: 'Cleared', tooltip: 'No tiles remaining' };
+    }
+
+    const totalCells = this.gridSize * this.gridSize;
+    let totalMaxPieces = 1; // 1 for the breaker tile
+    let hasTitan = false;
+    let titanVal = 0;
+
+    for (const t of targets) {
+      const peak = this.getPeak8Pieces(t.value);
+      totalMaxPieces += peak;
+      if (peak >= totalCells - 1) {
+        hasTitan = true;
+        if (t.value > titanVal) titanVal = t.value;
+      }
+    }
+
+    if (totalMaxPieces < totalCells) {
+      return {
+        enabled: true,
+        ready: true,
+        count: 0,
+        text: 'READY!',
+        excess: 0,
+        hasTitan: false,
+        tooltip: '💥 Big Bang READY! Any swipe will ignite the cascade victory!'
+      };
+    }
+
+    const excess = totalMaxPieces - (totalCells - 1);
+
+    if (hasTitan) {
+      return {
+        enabled: true,
+        ready: false,
+        count: 'Split',
+        text: 'Split Titan',
+        excess,
+        hasTitan: true,
+        titanVal,
+        tooltip: `Tiles ≥ 2048 (${titanVal}) must be divided first before Big Bang can activate!`
+      };
+    }
+
+    const tilesToReduce = Math.max(1, Math.ceil(excess / 8));
+    return {
+      enabled: true,
+      ready: false,
+      count: tilesToReduce,
+      text: `${tilesToReduce} ${tilesToReduce === 1 ? 'tile' : 'tiles'}`,
+      excess,
+      hasTitan: false,
+      tooltip: `Reduce or shatter ${tilesToReduce} more ${tilesToReduce === 1 ? 'tile' : 'tiles'} to ignite Big Bang!`
+    };
+  }
+
+  // Calculate how many target tiles must be reduced to reach Big Bang Finishing
+  getBigBangTilesToReduce() {
+    const status = this.getBigBangStatus();
+    if (!status.enabled) return null;
+    return status.count;
+  }
+
   // Execute Supernova / Big Bang Finishing with escalating explosions
   triggerBigBangFinishing() {
     const targets = [];
@@ -1251,7 +1334,7 @@ class GameEngine {
   }
 
   saveState() {
-    if (window.storageManager) {
+    if (typeof window !== 'undefined' && window.storageManager) {
       if (this.isGameOver) {
         window.storageManager.clearGameState();
         window.storageManager.recordGameEnd(false, this.tilesShattered);
@@ -1268,4 +1351,9 @@ class GameEngine {
   }
 }
 
-window.GameEngine = GameEngine;
+if (typeof window !== 'undefined') {
+  window.GameEngine = GameEngine;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = GameEngine;
+}

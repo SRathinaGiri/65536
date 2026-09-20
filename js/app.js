@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const bestScoreValEl = document.getElementById('bestScoreValue');
   const shatteredValEl = document.getElementById('shatteredValue');
   const levelValEl = document.getElementById('levelValue');
+  const bigBangBox = document.getElementById('bigBangBox');
+  const bigBangCount = document.getElementById('bigBangCount');
   const undoBtn = document.getElementById('undoBtn');
   const hammerBtn = document.getElementById('hammerBtn');
   const hammerCountEl = document.getElementById('hammerCount');
@@ -338,6 +340,9 @@ document.addEventListener('DOMContentLoaded', () => {
   game.on('stateChange', (state) => {
     renderer.render(state);
     scoreValEl.textContent = state.score.toLocaleString();
+    if (shatteredValEl) {
+      shatteredValEl.textContent = (state.tilesShattered || 0).toLocaleString();
+    }
     // State changes
     if (levelValEl) {
       const kVal = state.currentStartValue >= 1024 
@@ -347,6 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     updateHammerUI();
     updateWarpUI();
+    updateBigBangUI();
 
     // Score gain popup
     if (state.score > prevScore) {
@@ -442,6 +448,55 @@ document.addEventListener('DOMContentLoaded', () => {
     warpBtn.addEventListener('click', () => {
       if (game.warpCharges <= 0) return;
       setWarpMode(!warpMode);
+    });
+  }
+
+  // Supernova Big Bang Finishing HUD status update
+  function updateBigBangUI() {
+    if (!bigBangBox || !bigBangCount) return;
+    if (typeof game.getBigBangStatus !== 'function') return;
+
+    const status = game.getBigBangStatus();
+    if (!status || !status.enabled) {
+      bigBangBox.style.display = 'none';
+      return;
+    }
+    bigBangBox.style.display = 'inline-flex';
+
+    if (status.ready) {
+      bigBangBox.classList.add('ready');
+      bigBangCount.textContent = 'READY!';
+      bigBangBox.setAttribute('title', status.tooltip || '💥 Supernova Big Bang Ready! Any swipe triggers auto-clear.');
+    } else {
+      bigBangBox.classList.remove('ready');
+      if (status.hasTitan) {
+        bigBangCount.textContent = status.text || 'Split Titan';
+        bigBangBox.setAttribute('title', status.tooltip || 'Split large tiles first');
+      } else if (typeof status.count === 'number') {
+        bigBangCount.textContent = status.text || `${status.count} tiles`;
+        bigBangBox.setAttribute('title', status.tooltip || `Reduce ${status.count} more tiles to ignite Big Bang`);
+      } else {
+        bigBangCount.textContent = status.text || '--';
+        bigBangBox.setAttribute('title', status.tooltip || 'Supernova Big Bang status');
+      }
+    }
+  }
+
+  if (bigBangBox) {
+    bigBangBox.addEventListener('click', () => {
+      if (typeof game.getBigBangStatus !== 'function') return;
+      const status = game.getBigBangStatus();
+      if (!status || !status.enabled) return;
+
+      if (status.ready) {
+        showToast('💥 Supernova Big Bang is READY! Any swipe will ignite the cascade victory!');
+      } else if (status.hasTitan) {
+        showToast(`💥 Big Bang: Split tiles ≥ 2048 (${status.titanVal || 'large'}) first before auto-clear can activate!`);
+      } else if (typeof status.count === 'number') {
+        showToast(`💥 Big Bang: Reduce ${status.count} more ${status.count === 1 ? 'tile' : 'tiles'} (reach ≤ 7) to ignite!`);
+      } else {
+        showToast('💥 Big Bang Finishing: Clears the board when grid overflow becomes impossible!');
+      }
     });
   }
 
@@ -745,6 +800,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.storageManager.saveSettings(newSettings);
     settings = newSettings;
     game.supernovaFinishing = newSettings.supernovaFinishing !== false;
+    updateBigBangUI();
     applySettingsClasses();
     settingsModal.classList.remove('active');
 
@@ -1117,7 +1173,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Local-first Service Worker registration & version management
-  const APP_VERSION = '1.25';
+  const APP_VERSION = '1.26';
   console.log(`%c[65536]%c Local-first PWA v${APP_VERSION} active`, 'color:#8b5cf6;font-weight:bold;', 'color:#00f0ff;font-weight:bold;');
 
   if ('serviceWorker' in navigator) {
@@ -1185,7 +1241,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Initial trajectory preview & compass display
+  // Initial trajectory preview, compass display & Big Bang status
   updateCompassOutcomes();
   updateTrajectoryDisplay();
+  updateBigBangUI();
 });

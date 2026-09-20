@@ -166,7 +166,7 @@ header {
   color: #ffd600;
 }
 
-/* Breaker Legend / Status Banner */
+/* Breaker Legend & Big Bang Status Banner */
 .breaker-banner {
   background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -177,6 +177,13 @@ header {
   justify-content: space-between;
   font-size: 0.78rem;
   font-weight: 600;
+  gap: 8px;
+}
+
+.breaker-legend-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .breaker-banner-title {
@@ -221,6 +228,108 @@ header {
   background: #00ff66;
   color: #000000;
   box-shadow: 0 0 10px rgba(0, 255, 102, 0.5);
+}
+
+/* Supernova Big Bang Finishing Status Box */
+.big-bang-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 3px 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.25s ease;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.big-bang-box:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.big-bang-box:active {
+  transform: translateY(0);
+}
+
+.big-bang-icon {
+  font-size: 0.85rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 4px rgba(255, 100, 0, 0.6));
+}
+
+.big-bang-label {
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.big-bang-val {
+  color: #ff9e00;
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.3px;
+  transition: color 0.3s ease;
+}
+
+/* When Big Bang is READY */
+.big-bang-box.ready {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: rgba(0, 240, 255, 0.6);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+  animation: bigBangReadyPulse 1.6s ease-in-out infinite alternate;
+}
+
+.big-bang-box.ready .big-bang-val {
+  color: #00f0ff;
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.8);
+}
+
+.big-bang-box.ready .big-bang-icon {
+  animation: bigBangIconBounce 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes bigBangReadyPulse {
+  0% {
+    box-shadow: 0 0 6px rgba(0, 240, 255, 0.3);
+    border-color: rgba(0, 240, 255, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.7), 0 0 24px rgba(255, 0, 212, 0.3);
+    border-color: rgba(0, 240, 255, 0.9);
+  }
+}
+
+@keyframes bigBangIconBounce {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.25) rotate(10deg);
+  }
+}
+
+@media (max-width: 420px) {
+  .breaker-banner {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  .breaker-banner-title {
+    display: none;
+  }
+  .big-bang-box {
+    padding: 2px 8px;
+    font-size: 0.7rem;
+    gap: 4px;
+  }
+  .big-bang-label {
+    display: none;
+  }
 }
 
 /* Game Board Container */

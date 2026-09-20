@@ -2,7 +2,7 @@
 
 [![Play Online](https://img.shields.io/badge/Play%20Online-srathinagiri.github.io%2F65536-00f0ff?style=for-the-badge&logo=githubpages&logoColor=white)](https://srathinagiri.github.io/65536/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Local--First%20%26%20Offline-10b981?style=for-the-badge&logo=pwa&logoColor=white)](https://srathinagiri.github.io/65536/)
-[![Version](https://img.shields.io/badge/Version-v1.25-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
+[![Version](https://img.shields.io/badge/Version-v1.26-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 An addictive, tactical HTML5 Progressive Web App (PWA) that inverts the iconic **2048** mechanic on its head.
@@ -43,8 +43,17 @@ Built strictly as a **Local-First PWA**:
 ### 2. ⚡ The Single Breaker Rule
 - Exactly **one breaker tile** exists on the board at a time.
 - Swiping sends the breaker sliding across the grid. A new breaker spawns randomly in an empty cell only after the existing breaker is consumed or when starting a turn.
+- The breaker travels in the swiped direction until it hits the wall or collides with a target number tile.
 
-### 3. 💥 Breaker Types & Fission Mechanics
+### 3. 🎯 Reverse Division Mechanics (Fission Mode)
+When the breaker collides with a target number tile:
+- The target tile is divided by the breaker value ($T / B$).
+- **Chain Division**: The tile fissions into multiple smaller quotient pieces ($2$ pieces for $\div 2$, $4$ pieces for $\div 4$, $8$ pieces for $\div 8$).
+- **Stationary Obstacle Fluid Spill Dynamics**: Solid tiles on the board act as immovable walls. Splintered pieces flow like fluid directly into the nearest empty cells surrounding the collision site!
+- **Elimination Threshold**: Any target reduced to **$\le 16$** is completely shattered and disappears from the grid!
+- If the target tile value is not divisible without a remainder, it is reduced to the nearest lower power of two.
+
+### 4. 💥 Breaker Types & Fission Mechanics
 
 | Breaker | Color | Spawn Rate | Fission Behavior |
 | :---: | :---: | :---: | :--- |
@@ -129,13 +138,16 @@ Record, analyze, export, and showcase complete 65,536 games:
 
 ---
 
-## 💥 Supernova / Big Bang Finishing (v1.25)
+## 💥 Supernova / Big Bang Finishing & Live HUD Tracker (v1.26)
 
 Eliminates repetitive late-game cleanup when victory is mathematically assured:
-- **Critical Mass Detection**: Evaluates all remaining target tiles against worst-case 8-divider expansion.
-- **The Math**:
-  - Tiles $\le 128$: Vanish in a single `÷8` hit ($0$ pieces remain).
-  - Tiles $256, 512, 1024$: Generate at most 8 pieces before subsequent hits eliminate them ($8$ pieces peak).
+- **Glanceable Live Countdown Box**: Displayed directly in the Breaker banner above the board (`💥 Big Bang: 3 tiles`), dynamically updating as tiles are shattered.
+- **Titan Tile Guidance**: When large numbers ($\ge 2048$) remain, the badge displays `Split Titan`, prompting you to divide large monoliths before auto-clear unlocks.
+- **Active Ready Indicator**: Once critical mass is reached, the badge pulses with an energetic neon cyan glow (`💥 Big Bang: READY!`), alerting you that the next swipe will ignite the cascade victory!
+- **Interactive Hint**: Tap the Big Bang badge anytime to view a quick toast popup explaining current progress.
+- **Critical Mass Mathematics**:
+  - Tiles $\le 128$: Vanish in a single `÷8` hit ($0$ peak pieces).
+  - Tiles $256, 512, 1024$: Generate at most 8 pieces before subsequent hits eliminate them ($8$ peak pieces).
   - Tiles $2048, 4096+$: Branch into $\ge 64$ pieces (active campaign challenges).
   - Whenever $\sum \text{Peak8Pieces}(T) + 1 < \text{gridSize}^2$, grid overflow is physically impossible!
 - **Escalating Detonation Sequence**:

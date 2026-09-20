@@ -38,7 +38,7 @@
     <header>
       <div class="title-area">
         <h1>65536</h1>
-        <div class="subtitle">Reverse 2048 <span class="version-tag">v1.25</span></div>
+        <div class="subtitle">Reverse 2048 <span class="version-tag">v1.26</span></div>
       </div>
       <div class="header-actions">
         <button id="headerInstallBtn" class="icon-btn" aria-label="Install on this device" title="Install on this device">
@@ -79,13 +79,20 @@
       </div>
     </div>
 
-    <!-- Breaker Status / Legend Banner -->
+    <!-- Breaker Status & Supernova Big Bang Banner -->
     <div class="breaker-banner">
-      <span class="breaker-banner-title">Breakers (Divide):</span>
-      <div class="breaker-pills">
-        <span class="breaker-pill pill-2">÷2</span>
-        <span class="breaker-pill pill-4">÷4</span>
-        <span class="breaker-pill pill-8">÷8</span>
+      <div class="breaker-legend-group">
+        <span class="breaker-banner-title">Breakers:</span>
+        <div class="breaker-pills">
+          <span class="breaker-pill pill-2">÷2</span>
+          <span class="breaker-pill pill-4">÷4</span>
+          <span class="breaker-pill pill-8">÷8</span>
+        </div>
+      </div>
+      <div id="bigBangBox" class="big-bang-box" title="Supernova Big Bang Finishing: tiles to reduce before auto-clear triggers" role="status" aria-live="polite">
+        <span class="big-bang-icon">💥</span>
+        <span class="big-bang-label">Big Bang:</span>
+        <span id="bigBangCount" class="big-bang-val">--</span>
       </div>
     </div>
 
@@ -238,7 +245,7 @@
 
         <div class="rule-highlight" style="background: rgba(0, 240, 255, 0.12); border-left-color: #00f0ff;">
           <strong>💥 Supernova / Big Bang Finishing:</strong>
-          When remaining tiles on the board can mathematically never overflow the grid (even under 8-dividers), a critical mass cascade triggers automatically! All tiles detonate from smallest to largest in an epic escalating Big Bang explosion with full bonus points awarded.
+          When remaining tiles on the board can mathematically never overflow the grid (even under 8-dividers), a critical mass cascade triggers automatically! All tiles detonate from smallest to largest in an epic escalating Big Bang explosion with full bonus points awarded. Watch the live <strong>💥 Big Bang</strong> status box right above the board to track remaining tiles!
         </div>
 
         <div class="rule-highlight" style="background: rgba(139, 92, 246, 0.12); border-left-color: #8b5cf6;">
