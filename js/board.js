@@ -210,6 +210,9 @@ class BoardRenderer {
         el.style.removeProperty('--target-lock-color');
         el.style.removeProperty('--secondary-target-color');
       });
+      this.tileContainer.querySelectorAll('.tile-fission-preview').forEach(el => {
+        el.remove();
+      });
       this.tileContainer.querySelectorAll('.collision-preview-badge').forEach(el => {
         el.remove();
       });
@@ -240,6 +243,8 @@ class BoardRenderer {
       amber: { stroke: '#ffb300', glow: 'rgba(255, 179, 0, 0.5)' },
       red: { stroke: '#ff1744', glow: 'rgba(255, 23, 68, 0.55)' }
     };
+
+    const dirSymbols = { up: '▲', down: '▼', left: '◀', right: '▶' };
 
     const cx = (breakerStart.col + 0.5) * step;
     const cy = (breakerStart.row + 0.5) * step;
@@ -415,11 +420,23 @@ class BoardRenderer {
           targetTileEl.style.setProperty('--target-lock-color', theme.stroke);
 
           // If tile will be cleared in this direction, make it blink green!
-          // If tile will be broken/divided, make it blink with consequence color so overlapping numbers don't confuse!
+          // If tile will be broken/divided, alternate before/after flip!
           if (collision.eliminated) {
             targetTileEl.classList.add('tile-elimination-blink');
           } else {
             targetTileEl.classList.add('tile-target-dividing');
+
+            // Add the fission preview fragment as an alternating sibling inside targetTileEl
+            if (!targetTileEl.querySelector('.tile-fission-preview')) {
+              const fissionEl = document.createElement('div');
+              fissionEl.className = 'tile-fission-preview';
+              const symbol = dirSymbols[dir] || '';
+              fissionEl.innerHTML = `
+                <span class="ghost-dir-badge">${symbol}</span>
+                <span class="tile-number">${collision.newValue.toLocaleString()}</span>
+              `;
+              targetTileEl.appendChild(fissionEl);
+            }
           }
 
           if (isAimed || isNeutral) {
@@ -510,17 +527,19 @@ class BoardRenderer {
             (tile.row === sim.collision.collisionCell.row && tile.col === sim.collision.collisionCell.col)
           );
 
+          // If this piece lands in the colliding target tile cell, skip it in ghostContainer!
+          // The target tile itself smoothly flips between original value and resultant piece.
+          if (isOverlappingTarget) {
+            return;
+          }
+
           const ghost = document.createElement('div');
-          ghost.className = `ghost-preview-tile val-${tile.value} ghost-new-piece${isOverlappingTarget ? ' ghost-overlapping-target' : ''}`;
+          ghost.className = `ghost-preview-tile val-${tile.value} ghost-new-piece`;
           ghost.style.left = `${tile.col * stepPercent}%`;
           ghost.style.top = `${tile.row * stepPercent}%`;
           ghost.style.width = `${stepPercent}%`;
           ghost.style.height = `${stepPercent}%`;
           ghost.style.setProperty('--preview-tier', previewTier);
-          if (isOverlappingTarget) {
-            const theme = tierColors[previewTier];
-            ghost.style.setProperty('--target-lock-color', theme.stroke);
-          }
 
           const inner = document.createElement('div');
           inner.className = 'ghost-inner';

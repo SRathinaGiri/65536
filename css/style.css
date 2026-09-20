@@ -1459,23 +1459,66 @@ body.warp-targeting .tile {
   box-shadow: 0 0 22px rgba(0, 255, 102, 0.95), inset 0 0 12px rgba(0, 255, 102, 0.5) !important;
 }
 
-/* Alternating before/after flip for dividing target and its overlapping ghost piece */
+/* Alternating before/after flip for dividing target tile and resultant piece */
 .tile.tile-target-dividing .tile-inner {
-  animation: dividingTargetFlip 1s infinite ease-in-out !important;
+  animation: fissionBeforeFlip 1.6s infinite ease-in-out !important;
   border: 3px solid var(--target-lock-color, #ffd600) !important;
+  outline: none !important;
 }
 
-.ghost-preview-tile.ghost-overlapping-target {
-  z-index: 40 !important;
-  opacity: 1 !important;
-  animation: overlappingGhostFlip 1s infinite ease-in-out !important;
+.tile.tile-target-dividing .tile-fission-preview {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+  z-index: 10;
+  box-sizing: border-box;
+  background: rgba(15, 23, 42, 0.96);
+  border: 2.5px dashed var(--target-lock-color, #ffd600);
+  box-shadow: 0 0 16px var(--target-lock-color, #ffd600), inset 0 0 8px var(--target-lock-color, #ffd600);
+  animation: fissionAfterFlip 1.6s infinite ease-in-out;
 }
 
-.ghost-preview-tile.ghost-overlapping-target .ghost-inner {
-  border: 2.5px dashed var(--target-lock-color, #ffd600) !important;
-  box-shadow: 0 0 16px var(--target-lock-color, #ffd600), inset 0 0 8px var(--target-lock-color, #ffd600) !important;
-  background: rgba(15, 23, 42, 0.92) !important;
+[style*="--grid-size: 6"] .tile.tile-target-dividing .tile-fission-preview {
+  top: 3px; left: 3px; right: 3px; bottom: 3px;
+  border-radius: 10px;
 }
+[style*="--grid-size: 7"] .tile.tile-target-dividing .tile-fission-preview {
+  top: 2px; left: 2px; right: 2px; bottom: 2px;
+  border-radius: 8px;
+}
+[style*="--grid-size: 8"] .tile.tile-target-dividing .tile-fission-preview {
+  top: 2px; left: 2px; right: 2px; bottom: 2px;
+  border-radius: 6px;
+}
+
+.tile-fission-preview .ghost-dir-badge {
+  font-size: 0.78rem;
+  line-height: 1;
+  color: var(--target-lock-color, #ffd600);
+  margin-bottom: 2px;
+  font-weight: 800;
+}
+
+.tile-fission-preview .tile-number {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #ffffff;
+}
+
+[style*="--grid-size: 5"] .tile-fission-preview .tile-number { font-size: 1.12rem; }
+[style*="--grid-size: 6"] .tile-fission-preview .tile-number { font-size: 0.88rem; }
+[style*="--grid-size: 7"] .tile-fission-preview .tile-number { font-size: 0.72rem; }
+[style*="--grid-size: 8"] .tile-fission-preview .tile-number { font-size: 0.64rem; }
 
 /* Directional Trajectory Compass HUD */
 .trajectory-compass {

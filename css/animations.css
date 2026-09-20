@@ -273,7 +273,7 @@
   }
 }
 
-@keyframes dividingTargetFlip {
+@keyframes fissionBeforeFlip {
   0%, 42% {
     opacity: 1;
     transform: scale(1);
@@ -291,11 +291,10 @@
   }
 }
 
-@keyframes overlappingGhostFlip {
+@keyframes fissionAfterFlip {
   0%, 42% {
     opacity: 0;
     transform: scale(0.96);
-    pointer-events: none;
   }
   48%, 92% {
     opacity: 1;
@@ -304,7 +303,6 @@
   98%, 100% {
     opacity: 0;
     transform: scale(0.96);
-    pointer-events: none;
   }
 }
 
