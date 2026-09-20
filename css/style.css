@@ -1459,14 +1459,24 @@ body.warp-targeting .tile {
   box-shadow: 0 0 22px rgba(0, 255, 102, 0.95), inset 0 0 12px rgba(0, 255, 102, 0.5) !important;
 }
 
-/* Alternating before/after flip for dividing target tile and resultant piece */
-.tile.tile-target-dividing .tile-inner {
+/* Alternating before/after flip for dividing target tile and breaker tile when pieces land on them */
+.tile.tile-target-dividing .tile-inner,
+.tile.tile-breaker-dividing .tile-inner {
   animation: fissionBeforeFlip 1.6s infinite ease-in-out !important;
-  border: 3px solid var(--target-lock-color, #ffd600) !important;
   outline: none !important;
 }
 
-.tile.tile-target-dividing .tile-fission-preview {
+.tile.tile-target-dividing .tile-inner {
+  border: 3px solid var(--target-lock-color, #ffd600) !important;
+}
+
+.tile.tile-breaker-dividing .tile-inner {
+  border: 2.5px solid var(--target-lock-color, #ffd600) !important;
+  box-shadow: 0 0 20px var(--target-lock-color, #ffd600), inset 0 0 10px rgba(255, 255, 255, 0.6) !important;
+}
+
+.tile.tile-target-dividing .tile-fission-preview,
+.tile.tile-breaker-dividing .tile-fission-preview {
   position: absolute;
   top: 4px;
   left: 4px;
@@ -1487,15 +1497,18 @@ body.warp-targeting .tile {
   animation: fissionAfterFlip 1.6s infinite ease-in-out;
 }
 
-[style*="--grid-size: 6"] .tile.tile-target-dividing .tile-fission-preview {
+[style*="--grid-size: 6"] .tile.tile-target-dividing .tile-fission-preview,
+[style*="--grid-size: 6"] .tile.tile-breaker-dividing .tile-fission-preview {
   top: 3px; left: 3px; right: 3px; bottom: 3px;
   border-radius: 10px;
 }
-[style*="--grid-size: 7"] .tile.tile-target-dividing .tile-fission-preview {
+[style*="--grid-size: 7"] .tile.tile-target-dividing .tile-fission-preview,
+[style*="--grid-size: 7"] .tile.tile-breaker-dividing .tile-fission-preview {
   top: 2px; left: 2px; right: 2px; bottom: 2px;
   border-radius: 8px;
 }
-[style*="--grid-size: 8"] .tile.tile-target-dividing .tile-fission-preview {
+[style*="--grid-size: 8"] .tile.tile-target-dividing .tile-fission-preview,
+[style*="--grid-size: 8"] .tile.tile-breaker-dividing .tile-fission-preview {
   top: 2px; left: 2px; right: 2px; bottom: 2px;
   border-radius: 6px;
 }

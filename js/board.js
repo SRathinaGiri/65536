@@ -205,8 +205,8 @@ class BoardRenderer {
       this.ghostContainer.innerHTML = '';
     }
     if (this.tileContainer) {
-      this.tileContainer.querySelectorAll('.tile-target-locked, .tile-target-secondary, .tile-elimination-blink, .tile-target-dividing').forEach(el => {
-        el.classList.remove('tile-target-locked', 'tile-target-secondary', 'tile-elimination-blink', 'tile-target-dividing');
+      this.tileContainer.querySelectorAll('.tile-target-locked, .tile-target-secondary, .tile-elimination-blink, .tile-target-dividing, .tile-breaker-dividing').forEach(el => {
+        el.classList.remove('tile-target-locked', 'tile-target-secondary', 'tile-elimination-blink', 'tile-target-dividing', 'tile-breaker-dividing');
         el.style.removeProperty('--target-lock-color');
         el.style.removeProperty('--secondary-target-color');
       });
@@ -530,6 +530,28 @@ class BoardRenderer {
           // If this piece lands in the colliding target tile cell, skip it in ghostContainer!
           // The target tile itself smoothly flips between original value and resultant piece.
           if (isOverlappingTarget) {
+            return;
+          }
+
+          // Check if this ghost piece lands on the breaker tile's starting cell
+          const isOverlappingBreaker = breakerStart && (tile.row === breakerStart.row && tile.col === breakerStart.col);
+          if (isOverlappingBreaker) {
+            const breakerTileEl = this.tileContainer.querySelector('.tile.tile-breaker');
+            if (breakerTileEl) {
+              breakerTileEl.classList.add('tile-breaker-dividing');
+              const theme = tierColors[previewTier];
+              breakerTileEl.style.setProperty('--target-lock-color', theme.stroke);
+
+              if (!breakerTileEl.querySelector('.tile-fission-preview')) {
+                const fissionEl = document.createElement('div');
+                fissionEl.className = 'tile-fission-preview';
+                fissionEl.innerHTML = `
+                  <span class="ghost-dir-badge">${symbol}</span>
+                  <span class="tile-number">${tile.value.toLocaleString()}</span>
+                `;
+                breakerTileEl.appendChild(fissionEl);
+              }
+            }
             return;
           }
 
