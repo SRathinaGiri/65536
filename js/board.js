@@ -207,17 +207,7 @@ class BoardRenderer {
     const endX = (destCol + 0.5) * step;
     const endY = (destRow + 0.5) * step;
 
-    // 1. Defs for glow filter
-    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-    defs.innerHTML = `
-      <filter id="laserGlow" x="-50%" y="-50%" width="200%" height="200%">
-        <feDropShadow dx="0" dy="0" stdDeviation="1.2" flood-color="${theme.stroke}" flood-opacity="0.9" />
-        <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="${theme.stroke}" flood-opacity="0.5" />
-      </filter>
-    `;
-    this.trajectoryOverlay.appendChild(defs);
-
-    // 2. Traversed cell path tiles
+    // 1. Traversed cell path tiles
     if (breakerPath && breakerPath.length > 1) {
       breakerPath.forEach(pt => {
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -225,34 +215,60 @@ class BoardRenderer {
         rect.setAttribute('y', `${pt.row * step + 1}`);
         rect.setAttribute('width', `${step - 2}`);
         rect.setAttribute('height', `${step - 2}`);
-        rect.setAttribute('rx', '2.5');
+        rect.setAttribute('rx', '3');
         rect.setAttribute('fill', theme.glow);
-        rect.setAttribute('opacity', '0.12');
+        rect.setAttribute('opacity', '0.22');
         this.trajectoryOverlay.appendChild(rect);
       });
     }
 
-    // 3. Laser Beam Line
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', `${startX}`);
-    line.setAttribute('y1', `${startY}`);
-    line.setAttribute('x2', `${endX}`);
-    line.setAttribute('y2', `${endY}`);
-    line.setAttribute('stroke', theme.stroke);
-    line.setAttribute('stroke-width', '1.6');
-    line.setAttribute('stroke-dasharray', '2 1.5');
-    line.setAttribute('filter', 'url(#laserGlow)');
-    line.setAttribute('class', 'trajectory-laser-line');
-    this.trajectoryOverlay.appendChild(line);
+    // 2. Outer Glowing Laser Line
+    const glowLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    glowLine.setAttribute('x1', `${startX}`);
+    glowLine.setAttribute('y1', `${startY}`);
+    glowLine.setAttribute('x2', `${endX}`);
+    glowLine.setAttribute('y2', `${endY}`);
+    glowLine.setAttribute('stroke', theme.stroke);
+    glowLine.setAttribute('stroke-width', '4.5');
+    glowLine.setAttribute('stroke-linecap', 'round');
+    glowLine.setAttribute('opacity', '0.75');
+    glowLine.setAttribute('class', 'trajectory-laser-glow');
+    this.trajectoryOverlay.appendChild(glowLine);
 
-    // 4. Direction arrowhead / pulse indicator near destination
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', `${endX}`);
-    circle.setAttribute('cy', `${endY}`);
-    circle.setAttribute('r', '1.8');
-    circle.setAttribute('fill', theme.stroke);
-    circle.setAttribute('filter', 'url(#laserGlow)');
-    this.trajectoryOverlay.appendChild(circle);
+    // 3. Inner White Core Line (Pulsing dashed flow)
+    const coreLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    coreLine.setAttribute('x1', `${startX}`);
+    coreLine.setAttribute('y1', `${startY}`);
+    coreLine.setAttribute('x2', `${endX}`);
+    coreLine.setAttribute('y2', `${endY}`);
+    coreLine.setAttribute('stroke', '#ffffff');
+    coreLine.setAttribute('stroke-width', '2');
+    coreLine.setAttribute('stroke-dasharray', '3.5 2.5');
+    coreLine.setAttribute('stroke-linecap', 'round');
+    coreLine.setAttribute('class', 'trajectory-laser-core');
+    this.trajectoryOverlay.appendChild(coreLine);
+
+    // 4. Origin Emitter Pulse Ring at breaker center
+    const emitterRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    emitterRing.setAttribute('cx', `${startX}`);
+    emitterRing.setAttribute('cy', `${startY}`);
+    emitterRing.setAttribute('r', '3.2');
+    emitterRing.setAttribute('fill', theme.stroke);
+    emitterRing.setAttribute('stroke', '#ffffff');
+    emitterRing.setAttribute('stroke-width', '1.2');
+    emitterRing.setAttribute('class', 'trajectory-emitter-pulse');
+    this.trajectoryOverlay.appendChild(emitterRing);
+
+    // 5. Destination Reticle / Impact Ring
+    const targetRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    targetRing.setAttribute('cx', `${endX}`);
+    targetRing.setAttribute('cy', `${endY}`);
+    targetRing.setAttribute('r', '4');
+    targetRing.setAttribute('fill', theme.glow);
+    targetRing.setAttribute('stroke', theme.stroke);
+    targetRing.setAttribute('stroke-width', '2');
+    targetRing.setAttribute('class', 'trajectory-target-ring');
+    this.trajectoryOverlay.appendChild(targetRing);
 
     // 5. Target Lock or Wall Bounce
     if (collision) {

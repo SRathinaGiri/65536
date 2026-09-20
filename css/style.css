@@ -1126,12 +1126,29 @@ body.warp-targeting .tile {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 15;
+  z-index: 45 !important;
   overflow: visible;
 }
 
-.trajectory-laser-line {
+.trajectory-laser-glow {
   stroke-linecap: round;
+  filter: drop-shadow(0 0 5px currentColor) drop-shadow(0 0 12px currentColor);
+}
+
+.trajectory-laser-core {
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px #ffffff);
+  animation: laserCoreFlow 0.8s linear infinite;
+}
+
+.trajectory-emitter-pulse {
+  animation: emitterPulse 1s infinite alternate ease-in-out;
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+.trajectory-target-ring {
+  animation: targetRingPulse 0.8s infinite alternate ease-in-out;
+  filter: drop-shadow(0 0 8px currentColor);
 }
 
 .tile-target-locked {

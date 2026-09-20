@@ -10,7 +10,7 @@ class InputManager {
     this.isMouseDown = false;
     this.currentPreviewDir = null;
     this.minSwipeDistance = 30; // Minimum px distance for swipe detection
-    this.previewThreshold = 12; // Minimum px distance to start trajectory preview
+    this.previewThreshold = 6; // Minimum px distance to steer trajectory preview
 
     this.bindKeyboard();
     this.bindTouch();

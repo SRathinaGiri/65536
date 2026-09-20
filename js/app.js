@@ -163,6 +163,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  let currentAimDirection = null;
+
+  function pickDefaultAimDirection() {
+    if (!game || game.isWon || game.isGameOver) return null;
+    const simResults = game.simulateAllDirections();
+    // Prioritize a direction that causes collision
+    const collisionDir = ['up', 'down', 'left', 'right'].find(d => simResults[d] && simResults[d].collision);
+    if (collisionDir) return collisionDir;
+    const validDir = ['up', 'down', 'left', 'right'].find(d => simResults[d] && simResults[d].valid);
+    return validDir || 'up';
+  }
+
+  function updateTrajectoryDisplay(direction) {
+    if (!game || game.isWon || game.isGameOver || hammerMode || warpMode) {
+      renderer.clearTrajectoryPreview();
+      return;
+    }
+    if (settings.trajectoryPreview === false) {
+      renderer.clearTrajectoryPreview();
+      return;
+    }
+    const dirToUse = direction || currentAimDirection || pickDefaultAimDirection();
+    if (!dirToUse) {
+      renderer.clearTrajectoryPreview();
+      return;
+    }
+    currentAimDirection = dirToUse;
+
+    // Highlight active chip in compass
+    if (trajectoryCompass) {
+      trajectoryCompass.querySelectorAll('.compass-chip').forEach(btn => {
+        if (btn.getAttribute('data-dir') === dirToUse) {
+          btn.classList.add('chip-active');
+        } else {
+          btn.classList.remove('chip-active');
+        }
+      });
+    }
+
+    const sim = game.simulateMove(dirToUse);
+    renderer.renderTrajectoryPreview(sim);
+  }
+
   applySettingsClasses();
 
   // Audio mute button and settings synchronization
@@ -278,8 +321,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Undo button state
     undoBtn.disabled = !state.canUndo;
 
-    // Refresh directional trajectory compass outcomes
+    // Refresh directional trajectory compass outcomes & active laser aim
     updateCompassOutcomes();
+    updateTrajectoryDisplay();
   });
 
   // Hammer Mode implementation (Only tiles <= 256)
@@ -300,6 +344,11 @@ document.addEventListener('DOMContentLoaded', () => {
     hammerMode = active;
     if (hammerBtn) hammerBtn.classList.toggle('hammer-active', active);
     document.body.classList.toggle('hammer-targeting', active);
+    if (active) {
+      renderer.clearTrajectoryPreview();
+    } else {
+      updateTrajectoryDisplay();
+    }
 
     if (hammerBannerEl) {
       if (active) {
@@ -346,6 +395,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (warpBannerEl) warpBannerEl.style.display = active ? 'block' : 'none';
     if (warpBtn) warpBtn.classList.toggle('warp-active', active);
     document.body.classList.toggle('warp-targeting', active);
+    if (active) {
+      renderer.clearTrajectoryPreview();
+    } else {
+      updateTrajectoryDisplay();
+    }
   }
 
   if (warpBtn) {
@@ -433,6 +487,26 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       return;
     }
+
+    // 3. Normal board tap: steer trajectory laser aim toward tapped direction relative to breaker
+    if (!hammerMode && !warpMode) {
+      const rect = boardEl.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+      const col = Math.floor((clickX / rect.width) * game.gridSize);
+      const row = Math.floor((clickY / rect.height) * game.gridSize);
+
+      const breaker = game.grid.flat().find(t => t && t.type === 'breaker');
+      if (breaker) {
+        const dr = row - breaker.row;
+        const dc = col - breaker.col;
+        if (Math.abs(dr) > Math.abs(dc) && dr !== 0) {
+          updateTrajectoryDisplay(dr > 0 ? 'down' : 'up');
+        } else if (dc !== 0) {
+          updateTrajectoryDisplay(dc > 0 ? 'right' : 'left');
+        }
+      }
+    }
   });
 
   game.on('hammerUsed', (data) => {
@@ -510,37 +584,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // Input events
   input.on('previewMove', (direction) => {
     if (hammerMode || warpMode) return;
-
-    if (trajectoryCompass && settings.compassEnabled !== false) {
-      trajectoryCompass.querySelectorAll('.compass-chip').forEach(btn => {
-        if (btn.getAttribute('data-dir') === direction) {
-          btn.classList.add('chip-active');
-        } else {
-          btn.classList.remove('chip-active');
-        }
-      });
-    }
-
-    if (settings.trajectoryPreview !== false) {
-      const sim = game.simulateMove(direction);
-      renderer.renderTrajectoryPreview(sim);
-    }
+    updateTrajectoryDisplay(direction);
   });
 
   input.on('clearPreview', () => {
-    renderer.clearTrajectoryPreview();
-    if (trajectoryCompass) {
-      trajectoryCompass.querySelectorAll('.compass-chip').forEach(btn => {
-        btn.classList.remove('chip-active');
-      });
+    if (hammerMode || warpMode) {
+      renderer.clearTrajectoryPreview();
+    } else {
+      updateTrajectoryDisplay(currentAimDirection);
     }
   });
 
   input.on('move', (direction) => {
-    renderer.clearTrajectoryPreview();
     if (tutorialActive && tutorialStep === 2) {
       dismissTutorial();
     }
+    currentAimDirection = direction;
     game.move(direction);
   });
 
@@ -747,7 +806,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Local-first Service Worker registration & version management
-  const APP_VERSION = '1.11';
+  const APP_VERSION = '1.12';
   console.log(`%c[65536]%c Local-first PWA v${APP_VERSION} active`, 'color:#8b5cf6;font-weight:bold;', 'color:#00f0ff;font-weight:bold;');
 
   if ('serviceWorker' in navigator) {
@@ -814,4 +873,8 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => showTutorial(1), 350);
     }
   }
+
+  // Initial trajectory preview & compass display
+  updateCompassOutcomes();
+  updateTrajectoryDisplay();
 });
