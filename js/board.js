@@ -108,13 +108,17 @@ class BoardRenderer {
             // Force reflow so the browser registers the initial source position
             void tileEl.offsetWidth;
 
-            // Animate gliding from source tile to destination tile
-            const spillDelay = Math.min((tile.spillIndex || 0) * 16, 120);
+            // Animate gliding from source tile to destination tile with Carrom Board deceleration
+            const dist = Math.hypot(tile.col - tile.fromCol, tile.row - tile.fromRow);
+            const duration = Math.min(380, Math.max(220, Math.round(180 + dist * 35)));
+            tileEl.style.transition = `transform ${duration}ms cubic-bezier(0.16, 0.95, 0.3, 1.05)`;
+            const spillDelay = Math.min((tile.spillIndex || 0) * 12, 90);
             setTimeout(() => {
               tileEl.style.transform = `translate(${tile.col * 100}%, ${tile.row * 100}%)`;
               setTimeout(() => {
                 tileEl.classList.remove('tile-spilling');
-              }, 340);
+                tileEl.style.transition = '';
+              }, duration + 30);
             }, spillDelay);
           } else {
             if (tile.isNew) {

@@ -82,6 +82,22 @@ class SoundFX {
 
     // Add noise punch for crisp breaker sensation
     this.playNoise(0.06, 0.15);
+
+    // High-impact carrom coin scatter resonance for ÷4, ÷8, ÷16
+    if (breakerValue >= 4) {
+      const osc2 = this.ctx.createOscillator();
+      const gain2 = this.ctx.createGain();
+      osc2.type = 'sine';
+      const scatterFreq = breakerValue >= 8 ? 840 : 660;
+      osc2.frequency.setValueAtTime(scatterFreq, now + 0.02);
+      osc2.frequency.exponentialRampToValueAtTime(320, now + 0.14);
+      gain2.gain.setValueAtTime(0.12, now + 0.02);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+      osc2.connect(gain2);
+      gain2.connect(this.ctx.destination);
+      osc2.start(now + 0.02);
+      osc2.stop(now + 0.14);
+    }
   }
 
   playNoise(duration, vol) {

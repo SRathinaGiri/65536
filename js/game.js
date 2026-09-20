@@ -328,72 +328,143 @@ class GameEngine {
     return emptyCells[0];
   }
 
-  // Fluid spill: finds count closest empty cells starting from (centerR, centerC)
-  // Solid tiles act as impassable obstacles (fluid flows around them into empty space).
-  findFluidSpillSpots(centerR, centerC, count, grid = this.grid) {
+  // Carrom Board Kinetic Scatter Fission:
+  // Disperses splintered pieces outward along angular momentum rays through open cells.
+  // Higher-power breakers (÷4, ÷8, ÷16) project pieces further across open lanes.
+  // Lighter pieces (<=32, 64) carry more velocity and slide deeper, while heavier pieces (>=256) settle closer.
+  // Solid tiles remain stationary obstacles that deflect and stop sliding pieces.
+  findFluidSpillSpots(centerR, centerC, count, grid = this.grid, slideDir = 'right', divisor = 2, newVal = 32) {
     const spots = [];
-    const visited = Array.from({ length: this.gridSize }, () => Array(this.gridSize).fill(false));
-    const queue = [];
+    const claimed = new Set();
+    const isFree = (r, c) => {
+      if (r < 0 || r >= this.gridSize || c < 0 || c >= this.gridSize) return false;
+      return grid[r][c] === null && !claimed.has(`${r},${c}`);
+    };
 
-    // Epicenter cell (where the target tile shattered)
-    if (centerR >= 0 && centerR < this.gridSize && centerC >= 0 && centerC < this.gridSize) {
-      queue.push({ r: centerR, c: centerC, dist: 0 });
-      visited[centerR][centerC] = true;
-    }
+    // Forward vector from breaker impact momentum
+    let fDr = 0, fDc = 1;
+    if (slideDir === 'up') { fDr = -1; fDc = 0; }
+    else if (slideDir === 'down') { fDr = 1; fDc = 0; }
+    else if (slideDir === 'left') { fDr = 0; fDc = -1; }
+    else if (slideDir === 'right') { fDr = 0; fDc = 1; }
 
-    const dirs = [
-      [-1, 0], [1, 0], [0, -1], [0, 1], // Cardinal directions
-      [-1, -1], [-1, 1], [1, -1], [1, 1] // Diagonal directions
+    const pDr = -fDc, pDc = fDr; // Perpendicular vector (90 deg flank)
+
+    // 8 distinct carrom deflection rays ordered by kinetic spray priority:
+    // 1. Forward lane (in-line with breaker impact)
+    // 2. Diagonal forward sprays (±45°)
+    // 3. Lateral flanks (±90°)
+    // 4. Backward ricochets (±135°)
+    // 5. Direct rebound (180°)
+    const rays = [
+      { name: 'forward', dr: fDr, dc: fDc },
+      { name: 'diag_fwd_right', dr: fDr + pDr, dc: fDc + pDc },
+      { name: 'diag_fwd_left', dr: fDr - pDr, dc: fDc - pDc },
+      { name: 'flank_right', dr: pDr, dc: pDc },
+      { name: 'flank_left', dr: -pDr, dc: -pDc },
+      { name: 'diag_back_right', dr: -fDr + pDr, dc: -fDc + pDc },
+      { name: 'diag_back_left', dr: -fDr - pDr, dc: -fDc - pDc },
+      { name: 'rebound_back', dr: -fDr, dc: -fDc }
     ];
 
-    while (queue.length > 0 && spots.length < count) {
-      // Sort queue by distance from collision center so closest empty cells are filled first
-      queue.sort((a, b) => a.dist - b.dist);
-      const curr = queue.shift();
+    // Base impulse from breaker force
+    let baseDist = 1;
+    if (divisor >= 16) baseDist = 4;
+    else if (divisor >= 8) baseDist = 3;
+    else if (divisor >= 4) baseDist = 2;
+    else baseDist = 1;
 
-      // If empty cell, allocate it for a fluid piece
-      if (grid[curr.r][curr.c] === null) {
-        spots.push({ r: curr.r, c: curr.c });
-        if (spots.length >= count) break;
+    // Piece mass & velocity physics (lower values move faster and slide further)
+    let speedBonus = 0;
+    if (newVal <= 32) speedBonus = 2; // Lightest coin -> flies furthest into open lanes
+    else if (newVal <= 64) speedBonus = 1;
+    else if (newVal <= 128) speedBonus = 0;
+    else speedBonus = -1; // Heavier pieces -> high inertia, settle closer
+
+    const maxTravel = Math.max(1, Math.min(this.gridSize - 1, baseDist + speedBonus));
+
+    // Phase 1: Carrom Raycasting
+    // Cast each piece outward along its designated angular ray through open space
+    for (let i = 0; i < count; i++) {
+      const ray = rays[i % rays.length];
+      let bestCell = null;
+      let r = centerR;
+      let c = centerC;
+
+      for (let step = 1; step <= maxTravel; step++) {
+        r += ray.dr;
+        c += ray.dc;
+        if (r < 0 || r >= this.gridSize || c < 0 || c >= this.gridSize) break;
+        // Solid tile acts as an impassable obstacle stopping the slide
+        if (grid[r][c] !== null) break;
+        if (!claimed.has(`${r},${c}`)) {
+          bestCell = { r, c };
+        }
       }
 
-      // Expand outward to neighbors through open/empty cells only
-      for (const [dr, dc] of dirs) {
-        const nr = curr.r + dr;
-        const nc = curr.c + dc;
-        if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize && !visited[nr][nc]) {
-          visited[nr][nc] = true;
-          // Solid tiles are completely impassable! Fluid only flows through empty cells
-          if (grid[nr][nc] === null) {
-            queue.push({
-              r: nr,
-              c: nc,
-              dist: Math.hypot(nr - centerR, nc - centerC)
-            });
+      if (bestCell) {
+        claimed.add(`${bestCell.r},${bestCell.c}`);
+        spots.push(bestCell);
+      }
+    }
+
+    // Phase 2: Natural Carrom Deflection & Local Fallback
+    // If rays were blocked by obstacles or board borders, fill nearest accessible empty cells
+    if (spots.length < count) {
+      // First check the epicenter cell itself if free
+      if (isFree(centerR, centerC)) {
+        claimed.add(`${centerR},${centerC}`);
+        spots.push({ r: centerR, c: centerC });
+      }
+
+      if (spots.length < count) {
+        const queue = [{ r: centerR, c: centerC, dist: 0 }];
+        const visited = Array.from({ length: this.gridSize }, () => Array(this.gridSize).fill(false));
+        if (centerR >= 0 && centerR < this.gridSize && centerC >= 0 && centerC < this.gridSize) {
+          visited[centerR][centerC] = true;
+        }
+        const allDirs = [
+          [-1, 0], [1, 0], [0, -1], [0, 1],
+          [-1, -1], [-1, 1], [1, -1], [1, 1]
+        ];
+
+        while (queue.length > 0 && spots.length < count) {
+          queue.sort((a, b) => a.dist - b.dist);
+          const curr = queue.shift();
+
+          if (isFree(curr.r, curr.c)) {
+            claimed.add(`${curr.r},${curr.c}`);
+            spots.push({ r: curr.r, c: curr.c });
+            if (spots.length >= count) break;
+          }
+
+          for (const [dr, dc] of allDirs) {
+            const nr = curr.r + dr;
+            const nc = curr.c + dc;
+            if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize && !visited[nr][nc]) {
+              visited[nr][nc] = true;
+              if (grid[nr][nc] === null) {
+                queue.push({
+                  r: nr,
+                  c: nc,
+                  dist: Math.hypot(nr - centerR, nc - centerC)
+                });
+              }
+            }
           }
         }
       }
     }
 
-    // Fallback: if board is partitioned and queue empties before filling all pieces,
-    // fill remaining spots from any available empty cells on the board sorted by distance
+    // Phase 3: Absolute board safety sweep (if board was heavily partitioned)
     if (spots.length < count) {
-      const remainingEmpty = [];
-      for (let r = 0; r < this.gridSize; r++) {
-        for (let c = 0; c < this.gridSize; c++) {
-          if (grid[r][c] === null && !spots.some(s => s.r === r && s.c === c)) {
-            remainingEmpty.push({
-              r,
-              c,
-              dist: Math.hypot(r - centerR, c - centerC)
-            });
+      for (let r = 0; r < this.gridSize && spots.length < count; r++) {
+        for (let c = 0; c < this.gridSize && spots.length < count; c++) {
+          if (isFree(r, c)) {
+            claimed.add(`${r},${c}`);
+            spots.push({ r, c });
           }
         }
-      }
-      remainingEmpty.sort((a, b) => a.dist - b.dist);
-      while (spots.length < count && remainingEmpty.length > 0) {
-        const fallback = remainingEmpty.shift();
-        spots.push({ r: fallback.r, c: fallback.c });
       }
     }
 
@@ -607,9 +678,9 @@ class GameEngine {
                 // Shatter target tile at collision cell: it becomes empty
                 this.grid[nextR][nextC] = null;
 
-                // Fluid spill: pieces fill closest empty cells around collision point
-                // Solid tiles are completely stationary obstacles that fluid flows around!
-                const spillSpots = this.findFluidSpillSpots(nextR, nextC, piecesCount, this.grid);
+                // Carrom Board Kinetic Scatter: pieces spray outward along momentum rays through open cells!
+                // Solid tiles act as stationary obstacles (carrom coins) that deflect sliding pieces!
+                const spillSpots = this.findFluidSpillSpots(nextR, nextC, piecesCount, this.grid, direction, divisor, newVal);
                 spillSpots.forEach((spot, idx) => {
                   const piece = this.addTile(spot.r, spot.c, newVal, 'target');
                   piece.justDivided = true;
@@ -1107,9 +1178,8 @@ class GameEngine {
                 // Shatter target tile at collision cell: it becomes empty
                 simGrid[nextR][nextC] = null;
 
-                // Fluid spill: pieces fill closest empty cells around collision point
-                // Solid tiles are completely stationary obstacles that fluid flows around!
-                const spillSpots = this.findFluidSpillSpots(nextR, nextC, piecesCount, simGrid);
+                // Carrom Board Kinetic Scatter preview: pieces spray along momentum rays
+                const spillSpots = this.findFluidSpillSpots(nextR, nextC, piecesCount, simGrid, direction, divisor, newVal);
                 spillSpots.forEach(spot => {
                   simGrid[spot.r][spot.c] = {
                     row: spot.r,

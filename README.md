@@ -2,7 +2,7 @@
 
 [![Play Online](https://img.shields.io/badge/Play%20Online-srathinagiri.github.io%2F65536-00f0ff?style=for-the-badge&logo=githubpages&logoColor=white)](https://srathinagiri.github.io/65536/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Local--First%20%26%20Offline-10b981?style=for-the-badge&logo=pwa&logoColor=white)](https://srathinagiri.github.io/65536/)
-[![Version](https://img.shields.io/badge/Version-v1.26-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
+[![Version](https://img.shields.io/badge/Version-v1.27-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 An addictive, tactical HTML5 Progressive Web App (PWA) that inverts the iconic **2048** mechanic on its head.
@@ -49,7 +49,7 @@ Built strictly as a **Local-First PWA**:
 When the breaker collides with a target number tile:
 - The target tile is divided by the breaker value ($T / B$).
 - **Chain Division**: The tile fissions into multiple smaller quotient pieces ($2$ pieces for $\div 2$, $4$ pieces for $\div 4$, $8$ pieces for $\div 8$).
-- **Stationary Obstacle Fluid Spill Dynamics**: Solid tiles on the board act as immovable walls. Splintered pieces flow like fluid directly into the nearest empty cells surrounding the collision site!
+- **Carrom Board Kinetic Scatter Dynamics**: Splintered pieces radiate outward along momentum rays through open board corridors like carrom coins. Solid tiles remain immovable obstacles that deflect and stop sliding pieces!
 - **Elimination Threshold**: Any target reduced to **$\le 16$** is completely shattered and disappears from the grid!
 - If the target tile value is not divisible without a remainder, it is reduced to the nearest lower power of two.
 
@@ -57,14 +57,16 @@ When the breaker collides with a target number tile:
 
 | Breaker | Color | Spawn Rate | Fission Behavior |
 | :---: | :---: | :---: | :--- |
-| **÷2** | Crimson Red | **75%** | Divides target tile by 2 into **2 equal pieces**. |
-| **÷4** | Gold Amber | **15%** | Divides target tile by 4 into **4 pieces** in a cardinal cross formation. |
-| **÷8** | Cyan Neon | **10% (BONUS!)** | Detonates target tile into **8 pieces** that **fluidly spill and glide** into adjacent empty spaces, keeping all solid tiles stationary! |
+| **÷2** | Crimson Red | **75%** | Divides target tile by 2 into **2 equal pieces** in the immediate vicinity. |
+| **÷4** | Gold Amber | **15%** | Divides target tile by 4 into **4 pieces** with medium directional momentum. |
+| **÷8** | Cyan Neon | **10% (BONUS!)** | High-energy explosive strike! Projects **8 pieces** across open corridors with **Carrom Board Kinetic Scatter**! |
 
-### 4. 🌊 Fluid Spill & Gliding Animation (v1.23)
-- **Natural Liquid Flow**: Rather than unnaturally shifting existing solid tiles, the 8 resulting pieces from an 8-breaker flow like fluid directly into neighboring empty cells.
-- **Stationary Solid Tiles**: Existing numbers remain 100% fixed in place.
-- **Organic Gliding Animation**: Each newly divided fragment physically emerges from the shattered source tile and smoothly glides across the board into its destination cell with a staggered visual spray.
+### 5. 🎱 Carrom Board Kinetic Scatter (v1.27)
+- **Breaker Momentum & Energy**: High-power breakers (`÷4`, `÷8`, `÷16`) shoot pieces across the board along directional deflection rays, preventing predictable perimeter "onion peeling" clusters.
+- **Tile Mass & Velocity Physics**: Smaller/lighter pieces ($32, 64$) carry high velocity and slide further into distant open pockets, while heavier pieces ($128, 256$) settle closer to the impact point.
+- **Immovable Obstacles**: Existing numbers remain 100% fixed in place. Pieces slide through open corridors and bank against walls or solid tiles.
+- **Dynamic Deceleration Glide**: Newly divided fragments visually glide across the grid with realistic carrom friction deceleration (`cubic-bezier(0.16, 0.95, 0.3, 1.05)`).
+- **100% Ghost Preview Support**: The scatter rays are calculated deterministically along the striker's trajectory, so the aim laser and ghost preview show the exact landing spots before you swipe!
 
 ### 5. ✨ Tile Elimination Threshold
 - When any target tile is reduced to **16, 8, 4, or 2** ($\le 16$), it shatters into sparkling particles and **completely disappears from the board**.
