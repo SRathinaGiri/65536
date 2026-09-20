@@ -173,30 +173,25 @@
 @keyframes targetLockedPulse {
   0% {
     outline-color: var(--target-lock-color, #00f0ff);
-    box-shadow: 0 0 16px var(--target-lock-color, #00f0ff), inset 0 0 8px var(--target-lock-color, #00f0ff);
+    box-shadow: 0 0 8px var(--target-lock-color, #00f0ff);
     transform: scale(1);
   }
   100% {
     outline-color: #ffffff;
-    box-shadow: 0 0 28px var(--target-lock-color, #00f0ff), 0 0 40px rgba(255, 255, 255, 0.5), inset 0 0 16px var(--target-lock-color, #00f0ff);
-    transform: scale(1.03);
+    box-shadow: 0 0 16px var(--target-lock-color, #00f0ff), 0 0 20px rgba(255, 255, 255, 0.35);
+    transform: scale(1.02);
   }
 }
 
 @keyframes badgePopIn {
   0% {
     opacity: 0;
-    transform: translateX(-50%) translateY(6px) scale(0.7);
+    transform: translateX(-50%) translateY(4px) scale(0.8);
   }
   100% {
     opacity: 1;
     transform: translateX(-50%) translateY(0) scale(1);
   }
-}
-
-@keyframes wallPulse {
-  0% { opacity: 0.45; transform: scale(0.96); }
-  100% { opacity: 0.95; transform: scale(1); }
 }
 
 @keyframes compassPulse {
@@ -206,17 +201,17 @@
 
 @keyframes laserCoreFlow {
   0% { stroke-dashoffset: 0; }
-  100% { stroke-dashoffset: -12; }
+  100% { stroke-dashoffset: -7; }
 }
 
 @keyframes emitterPulse {
-  0% { r: 2.8; opacity: 0.8; }
-  100% { r: 4.2; opacity: 1; stroke-width: 2; }
+  0% { r: 0.6; opacity: 0.5; }
+  100% { r: 0.85; opacity: 0.8; }
 }
 
 @keyframes targetRingPulse {
-  0% { r: 3.5; opacity: 0.7; }
-  100% { r: 5.5; opacity: 1; stroke-width: 2.5; }
+  0% { r: 1.1; opacity: 0.7; }
+  100% { r: 1.5; opacity: 1; stroke-width: 0.7; }
 }
 
 

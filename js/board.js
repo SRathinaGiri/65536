@@ -164,9 +164,10 @@ class BoardRenderer {
       this.trajectoryOverlay.innerHTML = '';
     }
     if (this.tileContainer) {
-      this.tileContainer.querySelectorAll('.tile-target-locked').forEach(el => {
-        el.classList.remove('tile-target-locked');
+      this.tileContainer.querySelectorAll('.tile-target-locked, .tile-target-secondary').forEach(el => {
+        el.classList.remove('tile-target-locked', 'tile-target-secondary');
         el.style.removeProperty('--target-lock-color');
+        el.style.removeProperty('--secondary-target-color');
       });
       this.tileContainer.querySelectorAll('.collision-preview-badge').forEach(el => {
         el.remove();
@@ -179,122 +180,211 @@ class BoardRenderer {
     }
   }
 
-  renderTrajectoryPreview(previewData) {
+  // 4-Way Omnidirectional Radar Trajectory Preview
+  renderTrajectorySystem(allSims, activeDirection) {
     this.clearTrajectoryPreview();
-    if (!previewData || !previewData.valid || !this.trajectoryOverlay) return;
+    if (!allSims || !this.trajectoryOverlay) return;
+
+    // Find any valid simulation with breaker position
+    const sampleSim = Object.values(allSims).find(s => s && s.breakerStart);
+    if (!sampleSim || !sampleSim.breakerStart) return;
 
     const gridSize = this.currentGridSize || 8;
     const step = 100 / gridSize;
-
-    const { breakerStart, breakerEnd, collision, hitWall, breakerPath } = previewData;
-    if (!breakerStart) return;
+    const breakerStart = sampleSim.breakerStart;
     const breakerVal = breakerStart.value;
 
     const themeColors = {
-      2: { stroke: '#ff1744', glow: 'rgba(255, 23, 68, 0.75)', fill: '#ffebee' },
-      4: { stroke: '#ffd600', glow: 'rgba(255, 214, 0, 0.85)', fill: '#fffde7' },
-      8: { stroke: '#00f0ff', glow: 'rgba(0, 240, 255, 0.85)', fill: '#e0f7fa' },
-      16: { stroke: '#00ff66', glow: 'rgba(0, 255, 102, 0.85)', fill: '#e8f5e9' }
+      2: { stroke: '#ff1744', glow: 'rgba(255, 23, 68, 0.45)' },
+      4: { stroke: '#ffd600', glow: 'rgba(255, 214, 0, 0.45)' },
+      8: { stroke: '#00f0ff', glow: 'rgba(0, 240, 255, 0.45)' },
+      16: { stroke: '#00ff66', glow: 'rgba(0, 255, 102, 0.45)' }
     };
     const theme = themeColors[breakerVal] || themeColors[2];
 
     const startX = (breakerStart.col + 0.5) * step;
     const startY = (breakerStart.row + 0.5) * step;
 
-    const destCol = collision ? collision.collisionCell.col : breakerEnd.col;
-    const destRow = collision ? collision.collisionCell.row : breakerEnd.row;
+    // Subtle center marker at breaker (delicate, non-obstructive)
+    const centerDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    centerDot.setAttribute('cx', `${startX}`);
+    centerDot.setAttribute('cy', `${startY}`);
+    centerDot.setAttribute('r', '0.7');
+    centerDot.setAttribute('fill', '#ffffff');
+    centerDot.setAttribute('opacity', '0.7');
+    this.trajectoryOverlay.appendChild(centerDot);
 
-    const endX = (destCol + 0.5) * step;
-    const endY = (destRow + 0.5) * step;
+    const directions = ['up', 'down', 'left', 'right'];
+    // Render inactive directions first, then active direction on top
+    const sortedDirs = directions.filter(d => d !== activeDirection).concat([activeDirection]);
 
-    // 1. Traversed cell path tiles
-    if (breakerPath && breakerPath.length > 1) {
-      breakerPath.forEach(pt => {
-        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect.setAttribute('x', `${pt.col * step + 1}`);
-        rect.setAttribute('y', `${pt.row * step + 1}`);
-        rect.setAttribute('width', `${step - 2}`);
-        rect.setAttribute('height', `${step - 2}`);
-        rect.setAttribute('rx', '3');
-        rect.setAttribute('fill', theme.glow);
-        rect.setAttribute('opacity', '0.22');
-        this.trajectoryOverlay.appendChild(rect);
-      });
-    }
+    for (const dir of sortedDirs) {
+      const sim = allSims[dir];
+      if (!sim || !sim.valid) continue;
 
-    // 2. Outer Glowing Laser Line
-    const glowLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    glowLine.setAttribute('x1', `${startX}`);
-    glowLine.setAttribute('y1', `${startY}`);
-    glowLine.setAttribute('x2', `${endX}`);
-    glowLine.setAttribute('y2', `${endY}`);
-    glowLine.setAttribute('stroke', theme.stroke);
-    glowLine.setAttribute('stroke-width', '4.5');
-    glowLine.setAttribute('stroke-linecap', 'round');
-    glowLine.setAttribute('opacity', '0.75');
-    glowLine.setAttribute('class', 'trajectory-laser-glow');
-    this.trajectoryOverlay.appendChild(glowLine);
+      const isActive = (dir === activeDirection);
+      const { breakerEnd, collision, hitWall, breakerMoved } = sim;
 
-    // 3. Inner White Core Line (Pulsing dashed flow)
-    const coreLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    coreLine.setAttribute('x1', `${startX}`);
-    coreLine.setAttribute('y1', `${startY}`);
-    coreLine.setAttribute('x2', `${endX}`);
-    coreLine.setAttribute('y2', `${endY}`);
-    coreLine.setAttribute('stroke', '#ffffff');
-    coreLine.setAttribute('stroke-width', '2');
-    coreLine.setAttribute('stroke-dasharray', '3.5 2.5');
-    coreLine.setAttribute('stroke-linecap', 'round');
-    coreLine.setAttribute('class', 'trajectory-laser-core');
-    this.trajectoryOverlay.appendChild(coreLine);
+      const destCol = collision ? collision.collisionCell.col : breakerEnd.col;
+      const destRow = collision ? collision.collisionCell.row : breakerEnd.row;
 
-    // 4. Origin Emitter Pulse Ring at breaker center
-    const emitterRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    emitterRing.setAttribute('cx', `${startX}`);
-    emitterRing.setAttribute('cy', `${startY}`);
-    emitterRing.setAttribute('r', '3.2');
-    emitterRing.setAttribute('fill', theme.stroke);
-    emitterRing.setAttribute('stroke', '#ffffff');
-    emitterRing.setAttribute('stroke-width', '1.2');
-    emitterRing.setAttribute('class', 'trajectory-emitter-pulse');
-    this.trajectoryOverlay.appendChild(emitterRing);
+      const endX = (destCol + 0.5) * step;
+      const endY = (destRow + 0.5) * step;
 
-    // 5. Destination Reticle / Impact Ring
-    const targetRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    targetRing.setAttribute('cx', `${endX}`);
-    targetRing.setAttribute('cy', `${endY}`);
-    targetRing.setAttribute('r', '4');
-    targetRing.setAttribute('fill', theme.glow);
-    targetRing.setAttribute('stroke', theme.stroke);
-    targetRing.setAttribute('stroke-width', '2');
-    targetRing.setAttribute('class', 'trajectory-target-ring');
-    this.trajectoryOverlay.appendChild(targetRing);
+      const dist = Math.hypot(endX - startX, endY - startY);
+      // Skip if breaker didn't move at all and there's no collision in this direction
+      if (dist < 0.01 && !collision) continue;
 
-    // 5. Target Lock or Wall Bounce
-    if (collision) {
-      const targetTileEl = this.tileContainer.querySelector(`.tile[data-id="${collision.targetId}"]`);
-      if (targetTileEl) {
-        targetTileEl.classList.add('tile-target-locked');
-        targetTileEl.style.setProperty('--target-lock-color', theme.stroke);
+      if (isActive) {
+        // --- PRIMARY / AIMED DIRECTION (Subtle neon laser) ---
+        // 1. Slender outer aura
+        const glowLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        glowLine.setAttribute('x1', `${startX}`);
+        glowLine.setAttribute('y1', `${startY}`);
+        glowLine.setAttribute('x2', `${endX}`);
+        glowLine.setAttribute('y2', `${endY}`);
+        glowLine.setAttribute('stroke', theme.stroke);
+        glowLine.setAttribute('stroke-width', '1.1');
+        glowLine.setAttribute('stroke-linecap', 'round');
+        glowLine.setAttribute('opacity', '0.65');
+        glowLine.setAttribute('class', 'trajectory-laser-glow');
+        this.trajectoryOverlay.appendChild(glowLine);
 
-        const badge = document.createElement('div');
-        badge.className = `collision-preview-badge ${collision.eliminated ? 'badge-eliminated' : 'badge-divide'}`;
-        if (collision.eliminated) {
-          badge.innerHTML = `<span class="badge-icon">💥</span> Cleared! <small>+${collision.scoreGain.toLocaleString()}</small>`;
-        } else {
-          badge.innerHTML = `<span class="badge-icon">÷${collision.breakerValue}</span> ➔ <strong>${collision.newValue}</strong> <span class="badge-pieces">(${collision.piecesCount} pcs)</span>`;
+        // 2. White dashed flowing core line
+        const coreLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        coreLine.setAttribute('x1', `${startX}`);
+        coreLine.setAttribute('y1', `${startY}`);
+        coreLine.setAttribute('x2', `${endX}`);
+        coreLine.setAttribute('y2', `${endY}`);
+        coreLine.setAttribute('stroke', '#ffffff');
+        coreLine.setAttribute('stroke-width', '0.65');
+        coreLine.setAttribute('stroke-dasharray', '2 1.5');
+        coreLine.setAttribute('stroke-linecap', 'round');
+        coreLine.setAttribute('opacity', '0.95');
+        coreLine.setAttribute('class', 'trajectory-laser-core');
+        this.trajectoryOverlay.appendChild(coreLine);
+
+        // 3. Collision or Wall Marker
+        if (collision) {
+          // Destination Reticle Ring
+          const targetRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          targetRing.setAttribute('cx', `${endX}`);
+          targetRing.setAttribute('cy', `${endY}`);
+          targetRing.setAttribute('r', '1.2');
+          targetRing.setAttribute('fill', theme.stroke);
+          targetRing.setAttribute('stroke', '#ffffff');
+          targetRing.setAttribute('stroke-width', '0.5');
+          targetRing.setAttribute('class', 'trajectory-target-ring');
+          this.trajectoryOverlay.appendChild(targetRing);
+
+          // Target tile lock & outcome badge
+          const targetTileEl = this.tileContainer.querySelector(`.tile[data-id="${collision.targetId}"]`);
+          if (targetTileEl) {
+            targetTileEl.classList.remove('tile-target-secondary');
+            targetTileEl.classList.add('tile-target-locked');
+            targetTileEl.style.setProperty('--target-lock-color', theme.stroke);
+
+            const badge = document.createElement('div');
+            badge.className = `collision-preview-badge ${collision.eliminated ? 'badge-eliminated' : 'badge-divide'}`;
+            if (collision.eliminated) {
+              badge.innerHTML = `<span class="badge-icon">💥</span> Cleared! <small>+${collision.scoreGain.toLocaleString()}</small>`;
+            } else {
+              badge.innerHTML = `<span class="badge-icon">÷${collision.breakerValue}</span> ➔ <strong>${collision.newValue}</strong> <span class="badge-pieces">(${collision.piecesCount} pcs)</span>`;
+            }
+            targetTileEl.appendChild(badge);
+          }
+        } else if (hitWall && breakerMoved) {
+          // Subtle wall boundary tick in SVG
+          const wallTick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          let tx1 = endX, ty1 = endY, tx2 = endX, ty2 = endY;
+          const tickHalf = step * 0.28;
+          if (dir === 'up') {
+            const edgeY = breakerEnd.row * step + 0.8;
+            tx1 = endX - tickHalf; tx2 = endX + tickHalf;
+            ty1 = edgeY; ty2 = edgeY;
+          } else if (dir === 'down') {
+            const edgeY = (breakerEnd.row + 1) * step - 0.8;
+            tx1 = endX - tickHalf; tx2 = endX + tickHalf;
+            ty1 = edgeY; ty2 = edgeY;
+          } else if (dir === 'left') {
+            const edgeX = breakerEnd.col * step + 0.8;
+            tx1 = edgeX; tx2 = edgeX;
+            ty1 = endY - tickHalf; ty2 = endY + tickHalf;
+          } else if (dir === 'right') {
+            const edgeX = (breakerEnd.col + 1) * step - 0.8;
+            tx1 = edgeX; tx2 = edgeX;
+            ty1 = endY - tickHalf; ty2 = endY + tickHalf;
+          }
+          wallTick.setAttribute('x1', `${tx1}`);
+          wallTick.setAttribute('y1', `${ty1}`);
+          wallTick.setAttribute('x2', `${tx2}`);
+          wallTick.setAttribute('y2', `${ty2}`);
+          wallTick.setAttribute('stroke', '#ef4444');
+          wallTick.setAttribute('stroke-width', '0.7');
+          wallTick.setAttribute('stroke-linecap', 'round');
+          wallTick.setAttribute('opacity', '0.65');
+          this.trajectoryOverlay.appendChild(wallTick);
         }
-        targetTileEl.appendChild(badge);
+      } else {
+        // --- SECONDARY / OTHER DIRECTIONS (Subtle omnidirectional radar) ---
+        const guideLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        guideLine.setAttribute('x1', `${startX}`);
+        guideLine.setAttribute('y1', `${startY}`);
+        guideLine.setAttribute('x2', `${endX}`);
+        guideLine.setAttribute('y2', `${endY}`);
+        guideLine.setAttribute('stroke-linecap', 'round');
+
+        if (collision) {
+          // Hits a target in this secondary direction
+          guideLine.setAttribute('stroke', theme.stroke);
+          guideLine.setAttribute('stroke-width', '0.55');
+          guideLine.setAttribute('stroke-dasharray', '1.4 1.4');
+          guideLine.setAttribute('opacity', '0.45');
+          this.trajectoryOverlay.appendChild(guideLine);
+
+          // Tiny destination dot
+          const secDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          secDot.setAttribute('cx', `${endX}`);
+          secDot.setAttribute('cy', `${endY}`);
+          secDot.setAttribute('r', '0.85');
+          secDot.setAttribute('fill', theme.stroke);
+          secDot.setAttribute('opacity', '0.65');
+          this.trajectoryOverlay.appendChild(secDot);
+
+          // Subtle secondary target outline
+          const secTargetTile = this.tileContainer.querySelector(`.tile[data-id="${collision.targetId}"]`);
+          if (secTargetTile && !secTargetTile.classList.contains('tile-target-locked')) {
+            secTargetTile.classList.add('tile-target-secondary');
+            secTargetTile.style.setProperty('--secondary-target-color', theme.stroke);
+          }
+        } else if (hitWall && breakerMoved) {
+          // Hits a wall in this secondary direction
+          guideLine.setAttribute('stroke', '#94a3b8');
+          guideLine.setAttribute('stroke-width', '0.4');
+          guideLine.setAttribute('stroke-dasharray', '1 2');
+          guideLine.setAttribute('opacity', '0.25');
+          this.trajectoryOverlay.appendChild(guideLine);
+
+          const secWallDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          secWallDot.setAttribute('cx', `${endX}`);
+          secWallDot.setAttribute('cy', `${endY}`);
+          secWallDot.setAttribute('r', '0.55');
+          secWallDot.setAttribute('fill', '#94a3b8');
+          secWallDot.setAttribute('opacity', '0.35');
+          this.trajectoryOverlay.appendChild(secWallDot);
+        }
       }
-    } else if (hitWall) {
-      const wallMarker = document.createElement('div');
-      wallMarker.className = 'wall-preview-marker';
-      wallMarker.style.width = `${step}%`;
-      wallMarker.style.height = `${step}%`;
-      wallMarker.style.transform = `translate(${breakerEnd.col * 100}%, ${breakerEnd.row * 100}%)`;
-      wallMarker.innerHTML = `<div class="wall-marker-inner"><span>Wall</span></div>`;
-      this.boardEl.appendChild(wallMarker);
     }
+  }
+
+  // Backwards compatibility helper
+  renderTrajectoryPreview(previewData) {
+    if (!previewData || !previewData.valid) {
+      this.clearTrajectoryPreview();
+      return;
+    }
+    const dir = previewData.direction || 'up';
+    this.renderTrajectorySystem({ [dir]: previewData }, dir);
   }
 
   // Trigger elimination explosion when tile <= 16

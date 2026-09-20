@@ -202,8 +202,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    const sim = game.simulateMove(dirToUse);
-    renderer.renderTrajectoryPreview(sim);
+    const allSims = game.simulateAllDirections();
+    renderer.renderTrajectorySystem(allSims, dirToUse);
   }
 
   applySettingsClasses();
@@ -806,7 +806,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Local-first Service Worker registration & version management
-  const APP_VERSION = '1.12';
+  const APP_VERSION = '1.13';
   console.log(`%c[65536]%c Local-first PWA v${APP_VERSION} active`, 'color:#8b5cf6;font-weight:bold;', 'color:#00f0ff;font-weight:bold;');
 
   if ('serviceWorker' in navigator) {
