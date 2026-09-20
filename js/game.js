@@ -281,9 +281,11 @@ class GameEngine {
       grid[targetSpot.r][targetSpot.c] = tileToPush;
       tileToPush.row = targetSpot.r;
       tileToPush.col = targetSpot.c;
-      tileToPush.wasPushed = true;
-      tileToPush.pushDr = targetSpot.r - fromR;
-      tileToPush.pushDc = targetSpot.c - fromC;
+      if (grid !== this.grid) {
+        tileToPush.wasPushed = true;
+        tileToPush.pushDr = targetSpot.r - fromR;
+        tileToPush.pushDc = targetSpot.c - fromC;
+      }
       grid[fromR][fromC] = null;
       return targetSpot;
     }
@@ -837,9 +839,18 @@ class GameEngine {
       return { direction, valid: false, moved: false, reason: 'no_breaker' };
     }
 
-    // Clone grid with deep cell clones
+    // Clone grid with deep cell clones, resetting simulation-only flags
     const simGrid = this.grid.map((row, r) =>
-      row.map((cell, c) => (cell ? { ...cell, row: r, col: c, origRow: r, origCol: c } : null))
+      row.map((cell, c) => (cell ? {
+        ...cell,
+        row: r,
+        col: c,
+        origRow: r,
+        origCol: c,
+        wasPushed: false,
+        pushDr: 0,
+        pushDc: 0
+      } : null))
     );
 
     const rows = [];

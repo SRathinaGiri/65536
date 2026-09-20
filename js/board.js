@@ -384,8 +384,6 @@ class BoardRenderer {
           // If tile will be cleared in this direction, make it blink!
           if (collision.eliminated) {
             targetTileEl.classList.add('tile-elimination-blink');
-          } else {
-            targetTileEl.classList.add('tile-target-dividing');
           }
 
           if (isAimed || isNeutral) {
@@ -467,19 +465,6 @@ class BoardRenderer {
 
         // 2. Displaced existing tiles that were pushed outward by the division
         const displacedTiles = sim.projectedTiles.filter(t => !t.isNewPiece && t.wasPushed);
-
-        // Dim all vacated/displaced tiles on the board so they don't visually clash with preview tiles
-        const vacatedTileIds = new Set();
-        if (sim.collision && sim.collision.targetId) {
-          vacatedTileIds.add(sim.collision.targetId);
-        }
-        displacedTiles.forEach(t => {
-          if (t.id) vacatedTileIds.add(t.id);
-        });
-        vacatedTileIds.forEach(id => {
-          const el = this.tileContainer.querySelector(`.tile[data-id="${id}"]`);
-          if (el) el.classList.add('tile-target-dividing');
-        });
 
         // Render newly divided pieces
         resultantTiles.forEach(tile => {
