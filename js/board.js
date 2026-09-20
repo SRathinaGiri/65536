@@ -414,9 +414,12 @@ class BoardRenderer {
           targetTileEl.classList.add('tile-target-locked');
           targetTileEl.style.setProperty('--target-lock-color', theme.stroke);
 
-          // If tile will be cleared in this direction, make it blink!
+          // If tile will be cleared in this direction, make it blink green!
+          // If tile will be broken/divided, make it blink with consequence color so overlapping numbers don't confuse!
           if (collision.eliminated) {
             targetTileEl.classList.add('tile-elimination-blink');
+          } else {
+            targetTileEl.classList.add('tile-target-dividing');
           }
 
           if (isAimed || isNeutral) {

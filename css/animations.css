@@ -273,6 +273,19 @@
   }
 }
 
+@keyframes dividingTileBlink {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 24px var(--target-lock-color, #ffd600), inset 0 0 12px var(--target-lock-color, #ffd600);
+  }
+  50% {
+    opacity: 0.22;
+    transform: scale(0.95);
+    box-shadow: 0 0 6px var(--target-lock-color, #ffd600), inset 0 0 2px var(--target-lock-color, #ffd600);
+  }
+}
+
 /* Supernova / Big Bang Finishing Animations */
 .tile-supernova-arming {
   animation: supernovaArming 0.35s infinite alternate ease-in-out !important;
