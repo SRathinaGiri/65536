@@ -236,7 +236,8 @@ header {
   touch-action: none;
 }
 
-#particleCanvas {
+#particleCanvas,
+#replayParticleCanvas {
   position: absolute;
   top: 0;
   left: 0;
@@ -1477,4 +1478,223 @@ body.warp-targeting .tile {
 .hide-trajectory-compass {
   display: none !important;
 }
+
+/* Replay Modal Styling */
+.modal-replay .replay-modal-content {
+  max-width: 480px;
+  width: 96vw;
+  padding: 18px 16px;
+  background: #0f172a;
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.9), 0 0 28px rgba(0, 240, 255, 0.25);
+  display: flex;
+  flex-direction: column;
+  max-height: 94vh;
+  overflow-y: auto;
+}
+
+.replay-header {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.replay-title-area {
+  display: flex;
+  flex-direction: column;
+}
+
+.replay-subtitle {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.replay-board-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 380px;
+  margin: 0 auto;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  background: var(--bg-board, #0a0f1d);
+}
+
+.replay-action-banner {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin: 10px 0 6px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  color: #f8fafc;
+  font-weight: 700;
+  min-height: 32px;
+}
+
+.replay-score-delta {
+  color: #ffd600;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.replay-scrubber-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 10px 0;
+}
+
+.replay-time, .replay-step {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 700;
+  min-width: 42px;
+}
+
+.replay-step {
+  text-align: right;
+  min-width: 48px;
+}
+
+.replay-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  outline: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.replay-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #00f0ff;
+  box-shadow: 0 0 10px #00f0ff;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.replay-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.replay-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #00f0ff;
+  box-shadow: 0 0 10px #00f0ff;
+  border: none;
+  cursor: pointer;
+}
+
+.replay-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.replay-transport-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.replay-ctrl-btn {
+  padding: 6px 10px;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.replay-play-btn {
+  min-width: 84px;
+  padding: 6px 14px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  border-color: #22d3ee;
+  color: #000;
+}
+
+.replay-speed-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.speed-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 700;
+  margin-right: 2px;
+}
+
+.speed-chip {
+  padding: 3px 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.speed-chip:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.speed-chip.speed-active {
+  background: rgba(0, 240, 255, 0.2);
+  border-color: #00f0ff;
+  color: #00f0ff;
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+}
+
+.replay-file-actions {
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 10px;
+}
+
+.replay-file-actions .btn {
+  flex: 1;
+  font-size: 0.8rem;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+}
+
+.replay-file-actions .btn:hover {
+  background: rgba(99, 102, 241, 0.3);
+  border-color: #818cf8;
+}
+
 

@@ -38,7 +38,7 @@
     <header>
       <div class="title-area">
         <h1>65536</h1>
-        <div class="subtitle">Reverse 2048 <span class="version-tag">v1.23</span></div>
+        <div class="subtitle">Reverse 2048 <span class="version-tag">v1.24</span></div>
       </div>
       <div class="header-actions">
         <button id="headerInstallBtn" class="icon-btn" aria-label="Install on this device" title="Install on this device">
@@ -46,6 +46,9 @@
         </button>
         <button id="soundToggleBtn" class="icon-btn" aria-label="Toggle Sound" title="Sound Effects: ON (Tap to mute)">
           <span class="icon">🔊</span>
+        </button>
+        <button id="replayHeaderBtn" class="icon-btn" aria-label="Move History & Replay" title="Move History & Replay (Watch / Export / Import)">
+          <span class="icon">🎬</span>
         </button>
         <button id="helpBtn" class="icon-btn" aria-label="How to play">
           <span class="icon">❓</span>
@@ -330,6 +333,9 @@
       <button id="winNextLevelBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px; font-size: 1.05rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
         Next Level (<span id="winNextTarget">8192</span>) ▶
       </button>
+      <button id="winReplayBtn" class="btn" style="width: 100%; margin-top: 8px; background: rgba(99, 102, 241, 0.25); border: 1px solid rgba(139, 92, 246, 0.5);">
+        🎬 Watch Game Replay
+      </button>
       <button id="winPlayAgainBtn" class="btn" style="width: 100%; margin-top: 8px;">
         Replay Level
       </button>
@@ -349,6 +355,73 @@
       <button id="lossRetryBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
         Try Again
       </button>
+      <button id="lossReplayBtn" class="btn" style="width: 100%; margin-top: 8px; background: rgba(99, 102, 241, 0.25); border: 1px solid rgba(139, 92, 246, 0.5);">
+        🎬 Watch Game Replay
+      </button>
+    </div>
+  </div>
+
+  <!-- Move-History Replay Modal -->
+  <div id="replayModal" class="modal modal-replay">
+    <div class="modal-content replay-modal-content">
+      <div class="modal-header replay-header">
+        <div class="replay-title-area">
+          <h2 class="modal-title">🎬 Game Replay</h2>
+          <div id="replaySubtitle" class="replay-subtitle">Move 0 / 0 • Score: 0</div>
+        </div>
+        <button id="closeReplayBtn" class="icon-btn modal-close" aria-label="Close replay">&times;</button>
+      </div>
+      <div class="modal-body replay-modal-body">
+        <!-- Replay Board Wrapper -->
+        <div class="board-wrapper replay-board-wrapper">
+          <canvas id="replayParticleCanvas"></canvas>
+          <div id="replayBoard" class="board-container"></div>
+        </div>
+
+        <!-- Action / Move Info Banner -->
+        <div id="replayActionBanner" class="replay-action-banner">
+          <span id="replayActionText">Game Start</span>
+          <span id="replayScoreDelta" class="replay-score-delta"></span>
+        </div>
+
+        <!-- Progress Scrubber -->
+        <div class="replay-scrubber-container">
+          <span id="replayTimeDisplay" class="replay-time">0:00</span>
+          <input type="range" id="replayScrubber" min="0" max="0" value="0" class="replay-slider">
+          <span id="replayStepDisplay" class="replay-step">0 / 0</span>
+        </div>
+
+        <!-- Playback Controls -->
+        <div class="replay-controls">
+          <div class="replay-transport-btns">
+            <button id="replayFirstBtn" class="btn replay-ctrl-btn" title="First Move (Home)">⏮</button>
+            <button id="replayPrevBtn" class="btn replay-ctrl-btn" title="Step Back (Left Arrow)">◀</button>
+            <button id="replayPlayBtn" class="btn btn-primary replay-play-btn" title="Play / Pause (Space)">▶ Play</button>
+            <button id="replayNextBtn" class="btn replay-ctrl-btn" title="Step Forward (Right Arrow)">▶</button>
+            <button id="replayLastBtn" class="btn replay-ctrl-btn" title="Last Move (End)">⏭</button>
+          </div>
+
+          <!-- Speed Controls -->
+          <div class="replay-speed-selector">
+            <span class="speed-label">Speed:</span>
+            <button class="speed-chip" data-speed="0.5">0.5x</button>
+            <button class="speed-chip speed-active" data-speed="1">1x</button>
+            <button class="speed-chip" data-speed="2">2x</button>
+            <button class="speed-chip" data-speed="4">4x</button>
+          </div>
+        </div>
+
+        <!-- Export & Import Controls -->
+        <div class="replay-file-actions">
+          <button id="exportReplayBtn" class="btn" title="Download replay as JSON file">
+            <span>💾 Export JSON</span>
+          </button>
+          <button id="importReplayBtn" class="btn" title="Load a saved replay JSON file">
+            <span>📥 Load JSON</span>
+          </button>
+          <input type="file" id="replayFileInput" accept=".json" style="display: none;">
+        </div>
+      </div>
     </div>
   </div>
 
@@ -359,6 +432,7 @@
   <script src="js/audio.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/board.js"></script>
+  <script src="js/replay.js"></script>
   <script src="js/input.js"></script>
   <script src="js/game.js"></script>
   <script src="js/app.js"></script>

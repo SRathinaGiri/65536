@@ -20,8 +20,55 @@ class GameEngine {
     this.undoStack = [];
     this.maxUndo = 10;
     this.tileIdCounter = 1;
+    this.moveHistory = [];
+    this.sessionStartTime = Date.now();
     
     this.listeners = [];
+  }
+
+  recordHistoryFrame(data = {}) {
+    const timeMs = Date.now() - (this.sessionStartTime || Date.now());
+    const frame = {
+      step: this.moveHistory.length,
+      timeMs,
+      action: data.action || { type: 'unknown' },
+      description: data.description || '',
+      scoreGain: data.scoreGain || 0,
+      soundEvent: data.soundEvent || null,
+      state: {
+        grid: this.cloneGrid(),
+        score: this.score,
+        moves: this.moves,
+        level: this.level,
+        hammerCharges: this.hammerCharges,
+        warpCharges: this.warpCharges,
+        tilesShattered: this.tilesShattered,
+        isWon: this.isWon,
+        isGameOver: this.isGameOver
+      }
+    };
+    this.moveHistory.push(frame);
+    return frame;
+  }
+
+  getReplayData() {
+    const durationMs = this.moveHistory && this.moveHistory.length > 0
+      ? this.moveHistory[this.moveHistory.length - 1].timeMs
+      : 0;
+    return {
+      game: '65536',
+      version: '1.24',
+      exportedAt: new Date().toISOString(),
+      gridSize: this.gridSize,
+      startValue: this.currentStartValue,
+      level: this.level,
+      finalScore: this.score,
+      totalMoves: this.moves,
+      tilesShattered: this.tilesShattered,
+      result: this.isWon ? 'victory' : (this.isGameOver ? 'game_over' : 'in_progress'),
+      durationMs,
+      frames: this.moveHistory || []
+    };
   }
 
   on(event, callback) {
@@ -55,6 +102,8 @@ class GameEngine {
       this.lastHammerScore = 0;
       this.warpCharges = 1; // 1 warp available by default
       this.lastWarpScore = 0;
+      this.moveHistory = [];
+      this.sessionStartTime = Date.now();
     }
     this.isWon = false;
     this.isGameOver = false;
@@ -68,6 +117,13 @@ class GameEngine {
 
     // Exactly ONE breaker tile at start
     this.spawnRandomBreaker();
+
+    // Record initial starting frame
+    this.recordHistoryFrame({
+      action: { type: 'init' },
+      description: `Game started • Target ${startValue.toLocaleString()}`,
+      soundEvent: null
+    });
 
     this.saveState();
     this.emit('stateChange', this.getState());
@@ -147,6 +203,13 @@ class GameEngine {
       }
     }
 
+    this.recordHistoryFrame({
+      action: { type: 'hammer', row, col, value: val },
+      description: `🔨 Shattered ${val.toLocaleString()} with Hammer`,
+      scoreGain: type === 'target' ? val : 0,
+      soundEvent: 'hammer'
+    });
+
     this.saveState();
     this.emit('stateChange', this.getState());
     return { success: true, value: val };
@@ -199,6 +262,13 @@ class GameEngine {
       from: { r: oldR, c: oldC },
       to: { r: targetR, c: targetC },
       breaker
+    });
+
+    this.recordHistoryFrame({
+      action: { type: 'warp', from: { r: oldR, c: oldC }, to: { r: targetR, c: targetC } },
+      description: `⚡ Breaker Warped to (${targetR}, ${targetC})`,
+      scoreGain: 0,
+      soundEvent: 'warp'
     });
 
     this.saveState();
@@ -393,6 +463,10 @@ class GameEngine {
     if (snapshot.lastHammerScore !== undefined) this.lastHammerScore = snapshot.lastHammerScore;
     if (snapshot.warpCharges !== undefined) this.warpCharges = snapshot.warpCharges;
     this.isGameOver = false;
+
+    if (this.moveHistory && this.moveHistory.length > 1) {
+      this.moveHistory.pop();
+    }
 
     this.saveState();
     this.emit('stateChange', this.getState());
@@ -632,12 +706,34 @@ class GameEngine {
         // Spawn a new breaker tile on an empty cell
         const newBreaker = this.spawnRandomBreaker();
 
-        // Check Game Over (Loss)
         if (this.checkGameOver()) {
           this.isGameOver = true;
           this.emit('gameOver', { score: this.score, moves: this.moves });
         }
       }
+
+      // Record replay history frame
+      let moveDesc = `Swipe ${direction.toUpperCase()}`;
+      let soundCue = 'slide';
+      if (interactions.length > 0) {
+        const first = interactions[0];
+        if (first.eliminated) {
+          moveDesc = `Swipe ${direction.toUpperCase()} • 💥 Cleared ${first.oldTargetValue.toLocaleString()}`;
+          soundCue = 'clear';
+        } else {
+          moveDesc = `Swipe ${direction.toUpperCase()} • ÷${first.breakerValue} ➔ ${first.newTargetValue.toLocaleString()}`;
+          soundCue = 'hit';
+        }
+      } else if (this.isWon) {
+        soundCue = 'victory';
+      }
+
+      this.recordHistoryFrame({
+        action: { type: 'move', direction, interactions },
+        description: moveDesc,
+        scoreGain: this.score - snapshotScore,
+        soundEvent: soundCue
+      });
 
       this.saveState();
       this.emit('stateChange', this.getState());
@@ -965,7 +1061,15 @@ class GameEngine {
       lastHammerScore: this.lastHammerScore,
       warpCharges: this.warpCharges,
       lastWarpScore: this.lastWarpScore,
-      tileIdCounter: this.tileIdCounter
+      tileIdCounter: this.tileIdCounter,
+      moveHistory: this.moveHistory ? this.moveHistory.map(f => ({
+        ...f,
+        state: {
+          ...f.state,
+          grid: f.state && f.state.grid ? f.state.grid.map(row => row.map(c => c ? { ...c } : null)) : []
+        }
+      })) : [],
+      sessionStartTime: this.sessionStartTime
     };
   }
 
@@ -993,6 +1097,15 @@ class GameEngine {
     this.lastHammerScore = state.lastHammerScore !== undefined ? state.lastHammerScore : Math.floor(this.score / 25000) * 25000;
     this.warpCharges = state.warpCharges !== undefined ? state.warpCharges : 1;
     this.lastWarpScore = state.lastWarpScore !== undefined ? state.lastWarpScore : Math.floor(this.score / 50000) * 50000;
+    this.moveHistory = state.moveHistory || [];
+    this.sessionStartTime = state.sessionStartTime || Date.now();
+    if (this.moveHistory.length === 0 && !this.isWon && !this.isGameOver) {
+      this.recordHistoryFrame({
+        action: { type: 'init' },
+        description: `Game resumed • Target ${this.currentStartValue.toLocaleString()}`,
+        soundEvent: null
+      });
+    }
 
     // Auto-heal duplicate tile IDs and establish valid tileIdCounter
     const existingIds = new Set();

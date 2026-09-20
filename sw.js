@@ -1,4 +1,4 @@
-const SW_VERSION = '1.23';
+const SW_VERSION = '1.24';
 const CACHE_NAME = `65536-game-v${SW_VERSION}`;
 const ASSETS_TO_CACHE = [
   './',
@@ -9,6 +9,7 @@ const ASSETS_TO_CACHE = [
   './js/audio.js',
   './js/storage.js',
   './js/board.js',
+  './js/replay.js',
   './js/input.js',
   './js/game.js',
   './js/app.js',

@@ -65,6 +65,30 @@ document.addEventListener('DOMContentLoaded', () => {
   const lossScoreEl = document.getElementById('lossScore');
   const lossRetryBtn = document.getElementById('lossRetryBtn');
 
+  // Replay elements
+  const replayHeaderBtn = document.getElementById('replayHeaderBtn');
+  const replayModal = document.getElementById('replayModal');
+  const closeReplayBtn = document.getElementById('closeReplayBtn');
+  const replayBoardEl = document.getElementById('replayBoard');
+  const replayCanvasEl = document.getElementById('replayParticleCanvas');
+  const replaySubtitle = document.getElementById('replaySubtitle');
+  const replayActionText = document.getElementById('replayActionText');
+  const replayScoreDelta = document.getElementById('replayScoreDelta');
+  const replayTimeDisplay = document.getElementById('replayTimeDisplay');
+  const replayStepDisplay = document.getElementById('replayStepDisplay');
+  const replayScrubber = document.getElementById('replayScrubber');
+  const replayFirstBtn = document.getElementById('replayFirstBtn');
+  const replayPrevBtn = document.getElementById('replayPrevBtn');
+  const replayPlayBtn = document.getElementById('replayPlayBtn');
+  const replayNextBtn = document.getElementById('replayNextBtn');
+  const replayLastBtn = document.getElementById('replayLastBtn');
+  const replaySpeedChips = document.querySelectorAll('.replay-speed-selector .speed-chip');
+  const exportReplayBtn = document.getElementById('exportReplayBtn');
+  const importReplayBtn = document.getElementById('importReplayBtn');
+  const replayFileInput = document.getElementById('replayFileInput');
+  const winReplayBtn = document.getElementById('winReplayBtn');
+  const lossReplayBtn = document.getElementById('lossReplayBtn');
+
   // Toast notification helper
   let toastTimer = null;
   function showToast(message) {
@@ -577,6 +601,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (winNextTargetEl) {
       winNextTargetEl.textContent = data.nextValue ? data.nextValue.toLocaleString() : 'MAX';
     }
+    try {
+      window.storageManager.saveLastReplay(game.getReplayData());
+    } catch (e) {}
     winModal.classList.add('active');
   });
 
@@ -592,6 +619,9 @@ document.addEventListener('DOMContentLoaded', () => {
   game.on('gameOver', (data) => {
     window.soundFX.playGameOver();
     lossScoreEl.textContent = data.score.toLocaleString();
+    try {
+      window.storageManager.saveLastReplay(game.getReplayData());
+    } catch (e) {}
     gameOverModal.classList.add('active');
   });
 
@@ -718,6 +748,221 @@ document.addEventListener('DOMContentLoaded', () => {
     game.startNewGame(game.currentStartValue, false);
   });
 
+  // Move-History Replay Controller & UI Management
+  function formatReplayTime(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    const min = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+    return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+  }
+
+  let replayController = null;
+  if (window.ReplayController && replayBoardEl && replayCanvasEl) {
+    replayController = new window.ReplayController({
+      boardEl: replayBoardEl,
+      canvasEl: replayCanvasEl,
+      onFrameChange: (frame, curIndex, totalCount) => {
+        if (!frame) return;
+        const maxMove = Math.max(0, totalCount - 1);
+        if (replaySubtitle) {
+          replaySubtitle.textContent = `Move ${curIndex} / ${maxMove} • Score: ${frame.score.toLocaleString()}`;
+        }
+        if (replayActionText) {
+          replayActionText.textContent = frame.description || `Move ${curIndex}`;
+        }
+        if (replayScoreDelta) {
+          if (frame.scoreGain > 0) {
+            replayScoreDelta.textContent = `+${frame.scoreGain.toLocaleString()} pts`;
+            replayScoreDelta.style.display = 'inline';
+          } else {
+            replayScoreDelta.textContent = '';
+            replayScoreDelta.style.display = 'none';
+          }
+        }
+        if (replayTimeDisplay) {
+          replayTimeDisplay.textContent = formatReplayTime(frame.timeMs || 0);
+        }
+        if (replayStepDisplay) {
+          replayStepDisplay.textContent = `${curIndex} / ${maxMove}`;
+        }
+        if (replayScrubber) {
+          replayScrubber.max = maxMove;
+          replayScrubber.value = curIndex;
+        }
+      },
+      onPlayStateChange: (isPlaying) => {
+        if (replayPlayBtn) {
+          replayPlayBtn.innerHTML = isPlaying ? '⏸ Pause' : '▶ Play';
+          replayPlayBtn.classList.toggle('playing', isPlaying);
+        }
+      },
+      onSpeedChange: (spd) => {
+        replaySpeedChips.forEach(chip => {
+          chip.classList.toggle('speed-active', parseFloat(chip.dataset.speed) === spd);
+        });
+      }
+    });
+  }
+
+  function openReplayModal(customData = null) {
+    let dataToLoad = customData;
+    if (!dataToLoad) {
+      // 1. Check if current game has played moves
+      const currentGameData = game.getReplayData();
+      if (currentGameData && currentGameData.frames && currentGameData.frames.length > 1) {
+        dataToLoad = currentGameData;
+      } else {
+        // 2. Fallback to last finished game replay
+        const lastSaved = window.storageManager.getLastReplay();
+        if (lastSaved && lastSaved.frames && lastSaved.frames.length > 0) {
+          dataToLoad = lastSaved;
+        } else {
+          dataToLoad = currentGameData;
+        }
+      }
+    }
+
+    if (!dataToLoad || !dataToLoad.frames || dataToLoad.frames.length === 0) {
+      showToast('⚠️ No replay data available yet. Play some moves first!');
+      return;
+    }
+
+    if (replayController) {
+      replayController.load(dataToLoad);
+      if (replayScrubber) {
+        replayScrubber.min = 0;
+        replayScrubber.max = Math.max(0, dataToLoad.frames.length - 1);
+        replayScrubber.value = 0;
+      }
+    }
+
+    if (replayModal) {
+      replayModal.classList.add('active');
+    }
+  }
+
+  function closeReplayModal() {
+    if (replayController) {
+      replayController.pause();
+    }
+    if (replayModal) {
+      replayModal.classList.remove('active');
+    }
+  }
+
+  if (replayHeaderBtn) {
+    replayHeaderBtn.addEventListener('click', () => openReplayModal());
+  }
+
+  if (closeReplayBtn) {
+    closeReplayBtn.addEventListener('click', () => closeReplayModal());
+  }
+
+  if (winReplayBtn) {
+    winReplayBtn.addEventListener('click', () => {
+      winModal.classList.remove('active');
+      openReplayModal(game.getReplayData());
+    });
+  }
+
+  if (lossReplayBtn) {
+    lossReplayBtn.addEventListener('click', () => {
+      gameOverModal.classList.remove('active');
+      openReplayModal(game.getReplayData());
+    });
+  }
+
+  if (replayScrubber && replayController) {
+    replayScrubber.addEventListener('input', (e) => {
+      replayController.seekTo(parseInt(e.target.value, 10));
+    });
+  }
+
+  if (replayFirstBtn && replayController) {
+    replayFirstBtn.addEventListener('click', () => replayController.first());
+  }
+
+  if (replayPrevBtn && replayController) {
+    replayPrevBtn.addEventListener('click', () => replayController.stepBackward());
+  }
+
+  if (replayPlayBtn && replayController) {
+    replayPlayBtn.addEventListener('click', () => replayController.togglePlay());
+  }
+
+  if (replayNextBtn && replayController) {
+    replayNextBtn.addEventListener('click', () => replayController.stepForward(false));
+  }
+
+  if (replayLastBtn && replayController) {
+    replayLastBtn.addEventListener('click', () => replayController.last());
+  }
+
+  replaySpeedChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      if (!replayController) return;
+      const spd = parseFloat(chip.dataset.speed);
+      replayController.setSpeed(spd);
+    });
+  });
+
+  if (exportReplayBtn && replayController) {
+    exportReplayBtn.addEventListener('click', () => {
+      replayController.exportJSON();
+      showToast('💾 Replay JSON downloaded!');
+    });
+  }
+
+  if (importReplayBtn && replayFileInput) {
+    importReplayBtn.addEventListener('click', () => {
+      replayFileInput.value = '';
+      replayFileInput.click();
+    });
+
+    replayFileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const parsed = window.ReplayController.parseJSON(evt.target.result);
+          openReplayModal(parsed);
+          showToast(`📥 Loaded replay with ${parsed.totalMoves || (parsed.frames.length - 1)} moves!`);
+        } catch (err) {
+          alert('Could not load replay: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  // Keyboard navigation within Replay Modal
+  window.addEventListener('keydown', (e) => {
+    if (!replayModal || !replayModal.classList.contains('active') || !replayController) {
+      return;
+    }
+
+    if (e.code === 'Space') {
+      e.preventDefault();
+      replayController.togglePlay();
+    } else if (e.code === 'ArrowLeft') {
+      e.preventDefault();
+      replayController.stepBackward();
+    } else if (e.code === 'ArrowRight') {
+      e.preventDefault();
+      replayController.stepForward(false);
+    } else if (e.code === 'Home') {
+      e.preventDefault();
+      replayController.first();
+    } else if (e.code === 'End') {
+      e.preventDefault();
+      replayController.last();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      closeReplayModal();
+    }
+  });
+
   // PWA Installation & Local-First Management
   let deferredPrompt = null;
   let newWorkerWaiting = null;
@@ -820,7 +1065,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Local-first Service Worker registration & version management
-  const APP_VERSION = '1.23';
+  const APP_VERSION = '1.24';
   console.log(`%c[65536]%c Local-first PWA v${APP_VERSION} active`, 'color:#8b5cf6;font-weight:bold;', 'color:#00f0ff;font-weight:bold;');
 
   if ('serviceWorker' in navigator) {

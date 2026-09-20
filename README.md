@@ -2,7 +2,7 @@
 
 [![Play Online](https://img.shields.io/badge/Play%20Online-srathinagiri.github.io%2F65536-00f0ff?style=for-the-badge&logo=githubpages&logoColor=white)](https://srathinagiri.github.io/65536/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Local--First%20%26%20Offline-10b981?style=for-the-badge&logo=pwa&logoColor=white)](https://srathinagiri.github.io/65536/)
-[![Version](https://img.shields.io/badge/Version-v1.23-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
+[![Version](https://img.shields.io/badge/Version-v1.24-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 An addictive, tactical HTML5 Progressive Web App (PWA) that inverts the iconic **2048** mechanic on its head.
@@ -104,6 +104,23 @@ The game features an escalating campaign spanning powers of 2:
 - **Level 5**: **65,536** (Grandmaster Titan)
 
 > **Persistent Auto-Save**: Your active board layout, score, hammers, warps, and highest level reached are continuously saved in `localStorage`, so you can close the app and resume right where you left off.
+
+---
+
+## 🎬 Move-History Replay & Showcase (v1.24)
+
+Record, analyze, export, and showcase complete 65,536 games:
+- **Automatic Frame Recording**: Captures every move (swipe, hammer smash, breaker warp, fission chain) along with precise millisecond timestamps, action descriptions, score gains, and board state snapshots.
+- **Dedicated Replay Viewer**: Built-in isolated replay board lets you scrub through and watch playback without altering or risking your active game state.
+- **Full Media Transport Controls**:
+  - `▶ Play` / `⏸ Pause`
+  - `◀` Step Backward / `▶` Step Forward
+  - `⏮` Jump to Start (Move 0) / `⏭` Jump to Final Board
+- **Interactive Scrubber Slider**: Scrub fluidly through dozens or hundreds of moves with instant visual updates.
+- **Variable Playback Speeds**: `0.5x`, `1x`, `2x`, `4x` for rapid overviews or slow-motion tactical breakdowns.
+- **Export & Import JSON**: Download any completed or active game replay as a clean `.json` file (`65536-replay-LV{level}-{score}pts.json`) to share, archive, or reload later.
+- **Keyboard Shortcuts in Replay**: `Space` (Play/Pause), `ArrowLeft` (Step Back), `ArrowRight` (Step Forward), `Home` (Start), `End` (Finish), `Esc` (Close).
+- **Post-Game Integration**: Direct **🎬 Watch Game Replay** buttons on both Victory and Game Over screens.
 
 ---
 

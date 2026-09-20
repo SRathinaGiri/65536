@@ -51,8 +51,8 @@ class InputManager {
     };
 
     window.addEventListener('keydown', (e) => {
-      // Ignore if typing in an input/modal
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+      // Ignore if typing in an input or if any modal is currently open
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName) || document.querySelector('.modal.active')) {
         return;
       }
 

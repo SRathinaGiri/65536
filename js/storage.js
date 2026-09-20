@@ -145,6 +145,25 @@ class StorageManager {
   setTutorialSeen(seen = true) {
     localStorage.setItem(this.prefix + 'tutorial_seen', seen ? 'true' : 'false');
   }
+
+  saveLastReplay(replayData) {
+    try {
+      if (replayData) {
+        localStorage.setItem(this.prefix + 'last_replay', JSON.stringify(replayData));
+      }
+    } catch (e) {
+      console.warn('Failed to save last replay:', e);
+    }
+  }
+
+  getLastReplay() {
+    try {
+      const saved = localStorage.getItem(this.prefix + 'last_replay');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  }
 }
 
 window.storageManager = new StorageManager();
