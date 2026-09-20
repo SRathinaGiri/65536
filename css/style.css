@@ -1335,9 +1335,17 @@ body.warp-targeting .tile {
   font-size: 0.62rem;
 }
 
-/* Target tile when dividing into multiple pieces */
+.ghost-preview-tile.ghost-displaced-piece .ghost-inner {
+  border: 2px dashed #00e5ff;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.5), inset 0 0 8px rgba(0, 229, 255, 0.2);
+  background: rgba(8, 47, 73, 0.82);
+  animation: ghostPulse 1s infinite alternate ease-in-out;
+}
+
+/* Target and displaced tiles dimmed on the board during division preview */
 .tile-target-dividing .tile-inner {
-  opacity: 0.38;
+  opacity: 0.22;
+  filter: grayscale(0.5);
 }
 
 /* Tile marked for guaranteed elimination blinks */

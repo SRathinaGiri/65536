@@ -281,6 +281,9 @@ class GameEngine {
       grid[targetSpot.r][targetSpot.c] = tileToPush;
       tileToPush.row = targetSpot.r;
       tileToPush.col = targetSpot.c;
+      tileToPush.wasPushed = true;
+      tileToPush.pushDr = targetSpot.r - fromR;
+      tileToPush.pushDc = targetSpot.c - fromC;
       grid[fromR][fromC] = null;
       return targetSpot;
     }
@@ -836,7 +839,7 @@ class GameEngine {
 
     // Clone grid with deep cell clones
     const simGrid = this.grid.map((row, r) =>
-      row.map((cell, c) => (cell ? { ...cell, row: r, col: c } : null))
+      row.map((cell, c) => (cell ? { ...cell, row: r, col: c, origRow: r, origCol: c } : null))
     );
 
     const rows = [];
@@ -1085,11 +1088,18 @@ class GameEngine {
         const cell = simGrid[r][c];
         if (cell) {
           projectedTiles.push({
+            id: cell.id,
             row: r,
             col: c,
+            origRow: cell.origRow,
+            origCol: cell.origCol,
             value: cell.value,
             type: cell.type,
-            isNewPiece: !!cell.isNewPiece
+            isNewPiece: !!cell.isNewPiece,
+            wasPushed: !!cell.wasPushed,
+            pushDr: cell.pushDr !== undefined ? cell.pushDr : 0,
+            pushDc: cell.pushDc !== undefined ? cell.pushDc : 0,
+            hasMoved: cell.origRow !== undefined && (cell.origRow !== r || cell.origCol !== c)
           });
         }
       }

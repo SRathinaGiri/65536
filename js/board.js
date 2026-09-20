@@ -213,6 +213,7 @@ class BoardRenderer {
     const offset = step * 0.44; // Half-tile distance to tile boundary
 
     const directions = ['up', 'down', 'left', 'right'];
+    const directHitDirs = new Set();
     // If activeDirection is specified, render other directions first, active on top
     const sortedDirs = activeDirection
       ? directions.filter(d => d !== activeDirection).concat([activeDirection])
@@ -250,6 +251,10 @@ class BoardRenderer {
           targetRow = breakerStart.row;
           targetCol = tPos.col;
         }
+      }
+
+      if (isDirectHit) {
+        directHitDirs.add(dir);
       }
 
       // Calculate start and end coordinates anchored strictly to tile boundaries
@@ -424,11 +429,13 @@ class BoardRenderer {
     }
 
     // 5. In case of division: show where resultant cells will be occupied in 50% transparent
+    // ONLY for directions that have a direct target hit (if direction hits a wall, no preview is shown)
     if (this.ghostContainer) {
       const stepPercent = 100 / gridSize;
-      const dirsToRender = activeDirection
+      const dirsToRender = (activeDirection
         ? [activeDirection]
-        : ['up', 'down', 'left', 'right'];
+        : ['up', 'down', 'left', 'right']
+      ).filter(d => directHitDirs.has(d));
 
       const renderedCells = new Set();
       const dirSymbols = { up: '▲', down: '▼', left: '◀', right: '▶' };
@@ -455,9 +462,26 @@ class BoardRenderer {
 
         const symbol = dirSymbols[d] || '';
 
-        // Resultant newly divided pieces
+        // 1. Resultant newly divided pieces
         const resultantTiles = sim.projectedTiles.filter(t => t.isNewPiece);
 
+        // 2. Displaced existing tiles that were pushed outward by the division
+        const displacedTiles = sim.projectedTiles.filter(t => !t.isNewPiece && t.wasPushed);
+
+        // Dim all vacated/displaced tiles on the board so they don't visually clash with preview tiles
+        const vacatedTileIds = new Set();
+        if (sim.collision && sim.collision.targetId) {
+          vacatedTileIds.add(sim.collision.targetId);
+        }
+        displacedTiles.forEach(t => {
+          if (t.id) vacatedTileIds.add(t.id);
+        });
+        vacatedTileIds.forEach(id => {
+          const el = this.tileContainer.querySelector(`.tile[data-id="${id}"]`);
+          if (el) el.classList.add('tile-target-dividing');
+        });
+
+        // Render newly divided pieces
         resultantTiles.forEach(tile => {
           const cellKey = `${tile.row},${tile.col}`;
           if (renderedCells.has(cellKey)) return;
@@ -475,6 +499,35 @@ class BoardRenderer {
           inner.className = 'ghost-inner';
           inner.innerHTML = `
             <span class="ghost-dir-badge">${symbol}</span>
+            <span class="tile-number">${tile.value.toLocaleString()}</span>
+          `;
+          ghost.appendChild(inner);
+          this.ghostContainer.appendChild(ghost);
+        });
+
+        // Render displaced existing tiles (e.g. adjacent 2048 pushed to newly occupied cell)
+        displacedTiles.forEach(tile => {
+          const cellKey = `${tile.row},${tile.col}`;
+          if (renderedCells.has(cellKey)) return;
+          renderedCells.add(cellKey);
+
+          let moveSymbol = symbol;
+          if (tile.pushDc > 0) moveSymbol = '▶';
+          else if (tile.pushDc < 0) moveSymbol = '◀';
+          else if (tile.pushDr > 0) moveSymbol = '▼';
+          else if (tile.pushDr < 0) moveSymbol = '▲';
+
+          const ghost = document.createElement('div');
+          ghost.className = `ghost-preview-tile val-${tile.value} ghost-displaced-piece`;
+          ghost.style.left = `${tile.col * stepPercent}%`;
+          ghost.style.top = `${tile.row * stepPercent}%`;
+          ghost.style.width = `${stepPercent}%`;
+          ghost.style.height = `${stepPercent}%`;
+
+          const inner = document.createElement('div');
+          inner.className = 'ghost-inner';
+          inner.innerHTML = `
+            <span class="ghost-dir-badge">${moveSymbol}</span>
             <span class="tile-number">${tile.value.toLocaleString()}</span>
           `;
           ghost.appendChild(inner);
