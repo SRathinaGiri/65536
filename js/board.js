@@ -460,13 +460,9 @@ class BoardRenderer {
 
         const symbol = dirSymbols[d] || '';
 
-        // 1. Resultant newly divided pieces
+        // Render fluid spill pieces in preview
         const resultantTiles = sim.projectedTiles.filter(t => t.isNewPiece);
 
-        // 2. Displaced existing tiles that were pushed outward by the division
-        const displacedTiles = sim.projectedTiles.filter(t => !t.isNewPiece && t.wasPushed);
-
-        // Render newly divided pieces
         resultantTiles.forEach(tile => {
           const cellKey = `${tile.row},${tile.col}`;
           if (renderedCells.has(cellKey)) return;
@@ -484,35 +480,6 @@ class BoardRenderer {
           inner.className = 'ghost-inner';
           inner.innerHTML = `
             <span class="ghost-dir-badge">${symbol}</span>
-            <span class="tile-number">${tile.value.toLocaleString()}</span>
-          `;
-          ghost.appendChild(inner);
-          this.ghostContainer.appendChild(ghost);
-        });
-
-        // Render displaced existing tiles (e.g. adjacent 2048 pushed to newly occupied cell)
-        displacedTiles.forEach(tile => {
-          const cellKey = `${tile.row},${tile.col}`;
-          if (renderedCells.has(cellKey)) return;
-          renderedCells.add(cellKey);
-
-          let moveSymbol = symbol;
-          if (tile.pushDc > 0) moveSymbol = '▶';
-          else if (tile.pushDc < 0) moveSymbol = '◀';
-          else if (tile.pushDr > 0) moveSymbol = '▼';
-          else if (tile.pushDr < 0) moveSymbol = '▲';
-
-          const ghost = document.createElement('div');
-          ghost.className = `ghost-preview-tile val-${tile.value} ghost-displaced-piece`;
-          ghost.style.left = `${tile.col * stepPercent}%`;
-          ghost.style.top = `${tile.row * stepPercent}%`;
-          ghost.style.width = `${stepPercent}%`;
-          ghost.style.height = `${stepPercent}%`;
-
-          const inner = document.createElement('div');
-          inner.className = 'ghost-inner';
-          inner.innerHTML = `
-            <span class="ghost-dir-badge">${moveSymbol}</span>
             <span class="tile-number">${tile.value.toLocaleString()}</span>
           `;
           ghost.appendChild(inner);

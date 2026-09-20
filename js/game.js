@@ -256,40 +256,76 @@ class GameEngine {
     return emptyCells[0];
   }
 
-  pushTileOutward(fromR, fromC, dr, dc, grid = this.grid) {
-    const tileToPush = grid[fromR][fromC];
-    if (!tileToPush) return null;
+  // Fluid spill: finds count closest empty cells starting from (centerR, centerC)
+  // Solid tiles act as impassable obstacles (fluid flows around them into empty space).
+  findFluidSpillSpots(centerR, centerC, count, grid = this.grid) {
+    const spots = [];
+    const visited = Array.from({ length: this.gridSize }, () => Array(this.gridSize).fill(false));
+    const queue = [];
 
-    let testR = fromR + dr;
-    let testC = fromC + dc;
-    let targetSpot = null;
+    // Epicenter cell (where the target tile shattered)
+    if (centerR >= 0 && centerR < this.gridSize && centerC >= 0 && centerC < this.gridSize) {
+      queue.push({ r: centerR, c: centerC, dist: 0 });
+      visited[centerR][centerC] = true;
+    }
 
-    while (testR >= 0 && testR < this.gridSize && testC >= 0 && testC < this.gridSize) {
-      if (grid[testR][testC] === null) {
-        targetSpot = { r: testR, c: testC };
-        break;
+    const dirs = [
+      [-1, 0], [1, 0], [0, -1], [0, 1], // Cardinal directions
+      [-1, -1], [-1, 1], [1, -1], [1, 1] // Diagonal directions
+    ];
+
+    while (queue.length > 0 && spots.length < count) {
+      // Sort queue by distance from collision center so closest empty cells are filled first
+      queue.sort((a, b) => a.dist - b.dist);
+      const curr = queue.shift();
+
+      // If empty cell, allocate it for a fluid piece
+      if (grid[curr.r][curr.c] === null) {
+        spots.push({ r: curr.r, c: curr.c });
+        if (spots.length >= count) break;
       }
-      testR += dr;
-      testC += dc;
-    }
 
-    if (!targetSpot) {
-      targetSpot = this.findNearestEmptyCell(fromR, fromC, grid);
-    }
-
-    if (targetSpot) {
-      grid[targetSpot.r][targetSpot.c] = tileToPush;
-      tileToPush.row = targetSpot.r;
-      tileToPush.col = targetSpot.c;
-      if (grid !== this.grid) {
-        tileToPush.wasPushed = true;
-        tileToPush.pushDr = targetSpot.r - fromR;
-        tileToPush.pushDc = targetSpot.c - fromC;
+      // Expand outward to neighbors through open/empty cells only
+      for (const [dr, dc] of dirs) {
+        const nr = curr.r + dr;
+        const nc = curr.c + dc;
+        if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize && !visited[nr][nc]) {
+          visited[nr][nc] = true;
+          // Solid tiles are completely impassable! Fluid only flows through empty cells
+          if (grid[nr][nc] === null) {
+            queue.push({
+              r: nr,
+              c: nc,
+              dist: Math.hypot(nr - centerR, nc - centerC)
+            });
+          }
+        }
       }
-      grid[fromR][fromC] = null;
-      return targetSpot;
     }
-    return null;
+
+    // Fallback: if board is partitioned and queue empties before filling all pieces,
+    // fill remaining spots from any available empty cells on the board sorted by distance
+    if (spots.length < count) {
+      const remainingEmpty = [];
+      for (let r = 0; r < this.gridSize; r++) {
+        for (let c = 0; c < this.gridSize; c++) {
+          if (grid[r][c] === null && !spots.some(s => s.r === r && s.c === c)) {
+            remainingEmpty.push({
+              r,
+              c,
+              dist: Math.hypot(r - centerR, c - centerC)
+            });
+          }
+        }
+      }
+      remainingEmpty.sort((a, b) => a.dist - b.dist);
+      while (spots.length < count && remainingEmpty.length > 0) {
+        const fallback = remainingEmpty.shift();
+        spots.push({ r: fallback.r, c: fallback.c });
+      }
+    }
+
+    return spots;
   }
 
   spawnRandomBreaker() {
@@ -477,201 +513,33 @@ class GameEngine {
                 eliminated: false
               };
 
-              // Check Breaker by value: 8 -> 8 pieces, 4 -> 4 pieces, 2 -> 2 pieces
-              if (divisor === 8) {
-                // Breaker 8: 8 pieces in all 8 surrounding cells
-                if (newVal <= 16) {
-                  numberTile.isEliminated = true;
-                  this.grid[nextR][nextC] = null;
-                  this.tilesShattered += 8;
-                  this.score += prevVal * 8;
-                  interactionData.eliminated = true;
-                  interactionData.isBonus8 = true;
-                } else {
-                  this.grid[nextR][nextC] = null;
+              const piecesCount = divisor === 16 ? 16 : (divisor === 8 ? 8 : (divisor === 4 ? 4 : 2));
 
-                  const surroundingDirs = [
-                    [-1, -1], [-1, 0], [-1, 1],
-                    [0, -1],           [0, 1],
-                    [1, -1],  [1, 0],  [1, 1]
-                  ];
-
-                  surroundingDirs.forEach(([dr, dc]) => {
-                    const nr = nextR + dr;
-                    const nc = nextC + dc;
-
-                    if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
-                      if (this.grid[nr][nc] !== null) {
-                        this.pushTileOutward(nr, nc, dr, dc);
-                      }
-
-                      if (this.grid[nr][nc] === null) {
-                        const piece = this.addTile(nr, nc, newVal, 'target');
-                        piece.justDivided = true;
-                        interactedTiles.add(piece.id);
-                      } else {
-                        const spot = this.findNearestEmptyCell(nextR, nextC);
-                        if (spot) {
-                          const piece = this.addTile(spot.r, spot.c, newVal, 'target');
-                          piece.justDivided = true;
-                          interactedTiles.add(piece.id);
-                        }
-                      }
-                    } else {
-                      const spot = this.findNearestEmptyCell(nextR, nextC);
-                      if (spot) {
-                        const piece = this.addTile(spot.r, spot.c, newVal, 'target');
-                        piece.justDivided = true;
-                        interactedTiles.add(piece.id);
-                      }
-                    }
-                  });
-
-                  this.score += prevVal * 8;
-                  this.tilesShattered += 1;
-                  interactionData.isBonus8 = true;
-                }
-              } else if (divisor === 4) {
-                // Breaker 4: 4 pieces in 4 cardinal cross directions (Up, Down, Left, Right)
-                if (newVal <= 16) {
-                  numberTile.isEliminated = true;
-                  this.grid[nextR][nextC] = null;
-                  this.tilesShattered += 4;
-                  this.score += prevVal * 4;
-                  interactionData.eliminated = true;
-                } else {
-                  this.grid[nextR][nextC] = null;
-
-                  const crossDirs = [
-                    [-1, 0], // Up
-                    [1, 0],  // Down
-                    [0, -1], // Left
-                    [0, 1]   // Right
-                  ];
-
-                  crossDirs.forEach(([dr, dc]) => {
-                    const nr = nextR + dr;
-                    const nc = nextC + dc;
-
-                    if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
-                      if (this.grid[nr][nc] !== null) {
-                        this.pushTileOutward(nr, nc, dr, dc);
-                      }
-
-                      if (this.grid[nr][nc] === null) {
-                        const piece = this.addTile(nr, nc, newVal, 'target');
-                        piece.justDivided = true;
-                        interactedTiles.add(piece.id);
-                      } else {
-                        const spot = this.findNearestEmptyCell(nextR, nextC);
-                        if (spot) {
-                          const piece = this.addTile(spot.r, spot.c, newVal, 'target');
-                          piece.justDivided = true;
-                          interactedTiles.add(piece.id);
-                        }
-                      }
-                    } else {
-                      const spot = this.findNearestEmptyCell(nextR, nextC);
-                      if (spot) {
-                        const piece = this.addTile(spot.r, spot.c, newVal, 'target');
-                        piece.justDivided = true;
-                        interactedTiles.add(piece.id);
-                      }
-                    }
-                  });
-
-                  this.score += prevVal * 4;
-                  this.tilesShattered += 1;
-                }
-              } else if (divisor === 16) {
-                // Breaker 16: 16 pieces (value ÷ 16)
-                if (newVal <= 16) {
-                  numberTile.isEliminated = true;
-                  this.grid[nextR][nextC] = null;
-                  this.tilesShattered += 16;
-                  this.score += prevVal * 16;
-                  interactionData.eliminated = true;
-                  interactionData.isBonus16 = true;
-                } else {
-                  this.grid[nextR][nextC] = null;
-
-                  const surroundingDirs16 = [
-                    [-1, -1], [-1, 0], [-1, 1],
-                    [0, -1],           [0, 1],
-                    [1, -1],  [1, 0],  [1, 1],
-                    [-2, 0], [2, 0], [0, -2], [0, 2],
-                    [-2, -1], [-2, 1], [2, -1], [2, 1]
-                  ];
-
-                  surroundingDirs16.forEach(([dr, dc]) => {
-                    const nr = nextR + dr;
-                    const nc = nextC + dc;
-
-                    if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
-                      if (this.grid[nr][nc] !== null) {
-                        this.pushTileOutward(nr, nc, dr, dc);
-                      }
-
-                      if (this.grid[nr][nc] === null) {
-                        const piece = this.addTile(nr, nc, newVal, 'target');
-                        piece.justDivided = true;
-                        interactedTiles.add(piece.id);
-                      } else {
-                        const spot = this.findNearestEmptyCell(nextR, nextC);
-                        if (spot) {
-                          const piece = this.addTile(spot.r, spot.c, newVal, 'target');
-                          piece.justDivided = true;
-                          interactedTiles.add(piece.id);
-                        }
-                      }
-                    } else {
-                      const spot = this.findNearestEmptyCell(nextR, nextC);
-                      if (spot) {
-                        const piece = this.addTile(spot.r, spot.c, newVal, 'target');
-                        piece.justDivided = true;
-                        interactedTiles.add(piece.id);
-                      }
-                    }
-                  });
-
-                  this.score += prevVal * 16;
-                  this.tilesShattered += 1;
-                  interactionData.isBonus16 = true;
-                }
+              if (newVal <= 16) {
+                numberTile.isEliminated = true;
+                this.grid[nextR][nextC] = null;
+                this.tilesShattered += piecesCount;
+                this.score += prevVal * divisor;
+                interactionData.eliminated = true;
+                if (divisor === 8) interactionData.isBonus8 = true;
+                if (divisor === 16) interactionData.isBonus16 = true;
               } else {
-                // Breaker 2: 2 pieces (value ÷ 2)
-                if (newVal <= 16) {
-                  numberTile.isEliminated = true;
-                  this.grid[nextR][nextC] = null; // Both tiles disappear from board!
-                  this.tilesShattered += 2;
-                  this.score += prevVal * 2;
-                  interactionData.eliminated = true;
-                } else {
-                  // Place First tile at collision point (nextR, nextC)
-                  numberTile.row = nextR;
-                  numberTile.col = nextC;
-                  numberTile.value = newVal;
-                  numberTile.justDivided = true;
-                  this.grid[nextR][nextC] = numberTile;
-                  interactedTiles.add(numberTile.id);
+                // Shatter target tile at collision cell: it becomes empty
+                this.grid[nextR][nextC] = null;
 
-                  // Place Second twin tile of the same divided value
-                  let splitSpot = null;
-                  if (this.grid[curR][curC] === null && (curR !== nextR || curC !== nextC)) {
-                    splitSpot = { r: curR, c: curC };
-                  } else {
-                    splitSpot = this.findNearestEmptyCell(nextR, nextC);
-                  }
+                // Fluid spill: pieces fill closest empty cells around collision point
+                // Solid tiles are completely stationary obstacles that fluid flows around!
+                const spillSpots = this.findFluidSpillSpots(nextR, nextC, piecesCount, this.grid);
+                spillSpots.forEach(spot => {
+                  const piece = this.addTile(spot.r, spot.c, newVal, 'target');
+                  piece.justDivided = true;
+                  interactedTiles.add(piece.id);
+                });
 
-                  if (splitSpot) {
-                    const secondTile = this.addTile(splitSpot.r, splitSpot.c, newVal, 'target');
-                    secondTile.justDivided = true;
-                    interactedTiles.add(secondTile.id);
-                  }
-
-                  // Points earned: exactly proportional (prevVal * 2)
-                  this.score += prevVal * 2;
-                }
+                this.score += prevVal * divisor;
+                this.tilesShattered += 1;
+                if (divisor === 8) interactionData.isBonus8 = true;
+                if (divisor === 16) interactionData.isBonus16 = true;
               }
 
               interactions.push(interactionData);
@@ -957,106 +825,21 @@ class GameEngine {
               if (willEliminate) {
                 simGrid[nextR][nextC] = null;
               } else {
-                if (divisor === 8) {
-                  simGrid[nextR][nextC] = null;
-                  const surroundingDirs8 = [
-                    [-1, -1], [-1, 0], [-1, 1],
-                    [0, -1],           [0, 1],
-                    [1, -1],  [1, 0],  [1, 1]
-                  ];
-                  surroundingDirs8.forEach(([dr, dc]) => {
-                    const nr = nextR + dr;
-                    const nc = nextC + dc;
-                    if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
-                      if (simGrid[nr][nc] !== null) {
-                        this.pushTileOutward(nr, nc, dr, dc, simGrid);
-                      }
-                      if (simGrid[nr][nc] === null) {
-                        simGrid[nr][nc] = { row: nr, col: nc, value: newVal, type: 'target', isNewPiece: true };
-                      } else {
-                        const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
-                        if (spot) {
-                          simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
-                        }
-                      }
-                    } else {
-                      const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
-                      if (spot) {
-                        simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
-                      }
-                    }
-                  });
-                } else if (divisor === 4) {
-                  simGrid[nextR][nextC] = null;
-                  const crossDirs4 = [
-                    [-1, 0], [1, 0], [0, -1], [0, 1]
-                  ];
-                  crossDirs4.forEach(([dr, dc]) => {
-                    const nr = nextR + dr;
-                    const nc = nextC + dc;
-                    if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
-                      if (simGrid[nr][nc] !== null) {
-                        this.pushTileOutward(nr, nc, dr, dc, simGrid);
-                      }
-                      if (simGrid[nr][nc] === null) {
-                        simGrid[nr][nc] = { row: nr, col: nc, value: newVal, type: 'target', isNewPiece: true };
-                      } else {
-                        const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
-                        if (spot) {
-                          simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
-                        }
-                      }
-                    } else {
-                      const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
-                      if (spot) {
-                        simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
-                      }
-                    }
-                  });
-                } else if (divisor === 16) {
-                  simGrid[nextR][nextC] = null;
-                  const surroundingDirs16 = [
-                    [-1, -1], [-1, 0], [-1, 1],
-                    [0, -1],           [0, 1],
-                    [1, -1],  [1, 0],  [1, 1],
-                    [-2, 0], [2, 0], [0, -2], [0, 2],
-                    [-2, -1], [-2, 1], [2, -1], [2, 1]
-                  ];
-                  surroundingDirs16.forEach(([dr, dc]) => {
-                    const nr = nextR + dr;
-                    const nc = nextC + dc;
-                    if (nr >= 0 && nr < this.gridSize && nc >= 0 && nc < this.gridSize) {
-                      if (simGrid[nr][nc] !== null) {
-                        this.pushTileOutward(nr, nc, dr, dc, simGrid);
-                      }
-                      if (simGrid[nr][nc] === null) {
-                        simGrid[nr][nc] = { row: nr, col: nc, value: newVal, type: 'target', isNewPiece: true };
-                      } else {
-                        const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
-                        if (spot) {
-                          simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
-                        }
-                      }
-                    } else {
-                      const spot = this.findNearestEmptyCell(nextR, nextC, simGrid);
-                      if (spot) {
-                        simGrid[spot.r][spot.c] = { row: spot.r, col: spot.c, value: newVal, type: 'target', isNewPiece: true };
-                      }
-                    }
-                  });
-                } else {
-                  // Breaker 2
-                  simGrid[nextR][nextC] = { row: nextR, col: nextC, value: newVal, type: 'target', isNewPiece: true };
-                  let splitSpot = null;
-                  if (simGrid[curR][curC] === null && (curR !== nextR || curC !== nextC)) {
-                    splitSpot = { r: curR, c: curC };
-                  } else {
-                    splitSpot = this.findNearestEmptyCell(nextR, nextC, simGrid);
-                  }
-                  if (splitSpot) {
-                    simGrid[splitSpot.r][splitSpot.c] = { row: splitSpot.r, col: splitSpot.c, value: newVal, type: 'target', isNewPiece: true };
-                  }
-                }
+                // Shatter target tile at collision cell: it becomes empty
+                simGrid[nextR][nextC] = null;
+
+                // Fluid spill: pieces fill closest empty cells around collision point
+                // Solid tiles are completely stationary obstacles that fluid flows around!
+                const spillSpots = this.findFluidSpillSpots(nextR, nextC, piecesCount, simGrid);
+                spillSpots.forEach(spot => {
+                  simGrid[spot.r][spot.c] = {
+                    row: spot.r,
+                    col: spot.c,
+                    value: newVal,
+                    type: 'target',
+                    isNewPiece: true
+                  };
+                });
               }
             }
             break;
