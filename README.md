@@ -72,6 +72,7 @@ When the breaker collides with a target number tile:
 - **Simultaneous Multi-Tile Detonations**: If multiple tiles share the maximum value (e.g. two `4,096`s or four `2,048`s), **all of them detonate simultaneously**, generating exponential multi-explosion chain reactions over successive cycles (e.g. 1 ➔ 2 ➔ 4 ➔ 8).
 - **Domino Shove Line Displacement**: The original piece remains in its cell, while the twin piece shoves neighboring solid tiles outward along open corridors until an empty space is filled.
 - **Escalating Warning Tremors (Moves 45–49)**: From move 45 of each cycle onwards, highest tiles begin vibrating with escalating tremors and pulsing warning badges (`💥 in 5` down to `💥 NEXT!`), accompanied by Geiger ticks in audio.
+- **Tuned Moderate Challenge**: Calibrated to 50 moves with a 5-move warning window (moves 45–49), striking an ideal, moderately challenging balance. It provides players ample breathing room for deliberate setups and breaker alignment while keeping passive camping in check.
 - **Dedicated HUD Status Pill (`#fissionBox`)**: Live countdown badge in the breaker banner tracks moves until next fission with flashing warning states.
 - **Seismic Audio Synthesis**: Features a sub-bass seismic impact with resonant dual twin harmonics synthesized via Web Audio API.
 
@@ -127,6 +128,12 @@ The game features an escalating campaign spanning powers of 2:
 - **Level 5**: **65,536** (Grandmaster Titan)
 
 > **Persistent Auto-Save**: Your active board layout, score, hammers, warps, and highest level reached are continuously saved in `localStorage`, so you can close the app and resume right where you left off.
+
+### ⚖️ Moderately Challenging Gameplay Balance
+With the **v1.32** balance tuning, 65536 delivers a **satisfying, moderately challenging** puzzle experience:
+- **No Mindless Swiping**: Random swiping rapidly triggers kinetic shockwave tile displacement, filling open corridors and quickly resulting in board gridlock.
+- **No Infinite Stalling**: The 50-move Spontaneous Fission clock prevents players from coasting by only chipping small tiles in corners—highest-numbered titans will inevitably undergo nuclear fracture.
+- **Tactical Mastery Rewarded**: Clear laser paths, anti-phase ghost previews, escalating tremor warnings (moves 45–49), and calculated deployment of Shatter Hammers ($\le 256$) and Breaker Warps give strategic players the depth needed to conquer every tier up to **65,536**!
 
 ---
 
