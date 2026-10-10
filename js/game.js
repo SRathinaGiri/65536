@@ -60,7 +60,7 @@ class GameEngine {
       : 0;
     return {
       game: '65536',
-      version: '1.31',
+      version: '1.32',
       exportedAt: new Date().toISOString(),
       gridSize: this.gridSize,
       startValue: this.currentStartValue,
