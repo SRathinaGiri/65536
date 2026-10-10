@@ -401,6 +401,77 @@ class SoundFX {
     // Subtle crisp spark
     this.playNoise(0.04, 0.08 + Math.min(progress, 1) * 0.06);
   }
+
+  // Escalating Geiger Warning Ticks on moves 20 to 24
+  playGeigerWarning(warningLevel = 1) {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const ticks = Math.min(Math.max(warningLevel, 1), 5);
+    const baseFreq = 700 + ticks * 120; // 820Hz to 1300Hz
+
+    for (let i = 0; i < ticks; i++) {
+      const tickTime = now + i * 0.04;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(baseFreq + i * 60, tickTime);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.3, tickTime + 0.025);
+
+      gain.gain.setValueAtTime(0.08 + ticks * 0.02, tickTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, tickTime + 0.03);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(tickTime);
+      osc.stop(tickTime + 0.035);
+    }
+  }
+
+  // Seismic Spontaneous Fission Eruption (every 25th move)
+  playSeismicFission() {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+
+    // 1. Deep Sub-Bass Rumble
+    const bassOsc = this.ctx.createOscillator();
+    const bassGain = this.ctx.createGain();
+    bassOsc.type = 'sine';
+    bassOsc.frequency.setValueAtTime(180, now);
+    bassOsc.frequency.exponentialRampToValueAtTime(28, now + 0.45);
+    bassGain.gain.setValueAtTime(0.35, now);
+    bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+    bassOsc.connect(bassGain);
+    bassGain.connect(this.ctx.destination);
+    bassOsc.start(now);
+    bassOsc.stop(now + 0.45);
+
+    // 2. White Noise Shockwave
+    this.playNoise(0.28, 0.22);
+
+    // 3. Dual Resonant Twin Fission Harmonics
+    [520, 680].forEach((freq, idx) => {
+      const delay = idx * 0.045;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + delay);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.45, now + delay + 0.12);
+      gain.gain.setValueAtTime(0.18, now + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.22);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now + delay);
+      osc.stop(now + delay + 0.22);
+    });
+  }
 }
 
 window.soundFX = new SoundFX();

@@ -98,12 +98,13 @@ class StorageManager {
         dpadEnabled: false,
         trajectoryPreview: true,
         compassEnabled: true,
-        supernovaFinishing: true
+        supernovaFinishing: true,
+        spontaneousFission: true
       };
       const saved = localStorage.getItem(this.prefix + 'settings');
       return saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
     } catch (e) {
-      return { gridSize: 8, breakerSet: 3, dpadEnabled: false, trajectoryPreview: true, compassEnabled: true, supernovaFinishing: true };
+      return { gridSize: 8, breakerSet: 3, dpadEnabled: false, trajectoryPreview: true, compassEnabled: true, supernovaFinishing: true, spontaneousFission: true };
     }
   }
 

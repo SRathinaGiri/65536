@@ -82,6 +82,11 @@ class ReplayController {
           case 'victory':
             window.soundFX.playVictory();
             break;
+          case 'fission':
+            if (typeof window.soundFX.playSeismicFission === 'function') {
+              window.soundFX.playSeismicFission();
+            }
+            break;
         }
       } catch (e) {}
     }

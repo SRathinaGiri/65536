@@ -58,7 +58,7 @@ class BoardRenderer {
 
   render(state) {
     this.clearTrajectoryPreview();
-    const { grid, gridSize } = state;
+    const { grid, gridSize, fissionStatus } = state;
     if (!this.tileContainer || this.currentGridSize !== gridSize) {
       this.currentGridSize = gridSize;
       this.setupGrid(gridSize);
@@ -103,7 +103,7 @@ class BoardRenderer {
             this.tileContainer.appendChild(tileEl);
 
             // Set up classes and contents without overriding initial transform
-            this.updateTileElement(tileEl, tile, gridSize, true);
+            this.updateTileElement(tileEl, tile, gridSize, true, fissionStatus);
 
             // Force reflow so the browser registers the initial source position
             void tileEl.offsetWidth;
@@ -125,11 +125,11 @@ class BoardRenderer {
               tileEl.classList.add('tile-new');
             }
             this.tileContainer.appendChild(tileEl);
-            this.updateTileElement(tileEl, tile, gridSize);
+            this.updateTileElement(tileEl, tile, gridSize, false, fissionStatus);
           }
         } else {
           // Existing tile updating position & state
-          this.updateTileElement(tileEl, tile, gridSize);
+          this.updateTileElement(tileEl, tile, gridSize, false, fissionStatus);
         }
       }
     }
@@ -149,7 +149,7 @@ class BoardRenderer {
     });
   }
 
-  updateTileElement(el, tile, gridSize, skipTransform = false) {
+  updateTileElement(el, tile, gridSize, skipTransform = false, fissionStatus = null) {
     const inner = el.querySelector('.tile-inner');
 
     // Calculate position percentage
@@ -174,10 +174,16 @@ class BoardRenderer {
       } else {
         classNames += ' tile-immune';
       }
+
+      // Check Critical Mass / Spontaneous Fission warning (moves 20 to 24)
+      if (fissionStatus && fissionStatus.isWarning && fissionStatus.maxTileIds && fissionStatus.maxTileIds.has(tile.id)) {
+        classNames += ` tile-critical-warning tile-critical-warning-${fissionStatus.warningLevel}`;
+      }
     }
     if (tile.isNew && !tile.isSpilling) classNames += ' tile-new';
     if (tile.isSpilling) classNames += ' tile-spilling';
     if (tile.justDivided && !tile.isSpilling) classNames += ' tile-impact';
+    if (tile.wasFission) classNames += ' tile-fission-burst';
     el.className = classNames;
 
     // Format display content
@@ -189,10 +195,16 @@ class BoardRenderer {
     } else {
       // Format big numbers
       const isSmashable = tile.value <= 256;
+      const isCritical = fissionStatus && fissionStatus.isWarning && fissionStatus.maxTileIds && fissionStatus.maxTileIds.has(tile.id);
+      const fissionBadgeHtml = isCritical
+        ? `<span class="fission-tile-badge">💥 ${fissionStatus.movesLeft === 1 ? 'NEXT!' : fissionStatus.movesLeft}</span>`
+        : '';
+
       inner.innerHTML = `
         <span class="target-badge">TARGET</span>
         <span class="tile-number">${tile.value.toLocaleString()}</span>
         ${isSmashable ? '<span class="hammer-smash-indicator">🔨 BREAK</span>' : '<span class="hammer-immune-indicator">🛡️</span>'}
+        ${fissionBadgeHtml}
       `;
     }
   }
@@ -844,6 +856,62 @@ class BoardRenderer {
         color: colors[Math.floor(Math.random() * colors.length)],
         alpha: 1,
         decay: 0.03 + Math.random() * 0.02
+      });
+    }
+
+    if (!this.animating) {
+      this.animating = true;
+      requestAnimationFrame(() => this.updateParticles());
+    }
+  }
+
+  triggerFissionExplosion(data) {
+    if (!this.boardEl) return;
+    this.boardEl.classList.remove('board-fission-shake');
+    void this.boardEl.offsetWidth;
+    this.boardEl.classList.add('board-fission-shake');
+    setTimeout(() => {
+      this.boardEl.classList.remove('board-fission-shake');
+    }, 450);
+
+    const gridSize = this.currentGridSize || 8;
+    if (data && data.results) {
+      data.results.forEach(res => {
+        this.createFissionParticles(res.row, res.col, res.oldValue, gridSize);
+        if (res.twinRow !== undefined && res.twinCol !== undefined) {
+          this.createFissionParticles(res.twinRow, res.twinCol, res.newValue, gridSize);
+        }
+      });
+    }
+  }
+
+  createFissionParticles(row, col, value, gridSize) {
+    if (!this.ctx || !this.canvas) return;
+    this.resizeCanvas();
+
+    const cellW = this.canvas.width / gridSize;
+    const cellH = this.canvas.height / gridSize;
+    const centerX = col * cellW + cellW / 2;
+    const centerY = row * cellH + cellH / 2;
+
+    const colors = ['#ec4899', '#f43f5e', '#fbbf24', '#ffffff', '#a855f7'];
+    const count = 36;
+
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 3.0 + Math.random() * 6.0;
+      this.particles.push({
+        x: centerX,
+        y: centerY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 3 + Math.random() * 5,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        alpha: 1,
+        decay: 0.028 + Math.random() * 0.025,
+        isShard: true,
+        rotation: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 0.3
       });
     }
 

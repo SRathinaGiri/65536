@@ -2,7 +2,7 @@
 
 [![Play Online](https://img.shields.io/badge/Play%20Online-srathinagiri.github.io%2F65536-00f0ff?style=for-the-badge&logo=githubpages&logoColor=white)](https://srathinagiri.github.io/65536/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Local--First%20%26%20Offline-10b981?style=for-the-badge&logo=pwa&logoColor=white)](https://srathinagiri.github.io/65536/)
-[![Version](https://img.shields.io/badge/Version-v1.30-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
+[![Version](https://img.shields.io/badge/Version-v1.31-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 An addictive, tactical HTML5 Progressive Web App (PWA) that inverts the iconic **2048** mechanic on its head.
@@ -67,11 +67,19 @@ When the breaker collides with a target number tile:
 - **Full Move Preview Support**: Both newly divided quotient pieces and displaced solid tiles (with cyan dashed borders and directional movement arrows `▲`, `▼`, `◀`, `▶`) are rendered in real time.
 - **Synchronized Alternating Flips**: Target collision cells and breaker starting cells cleanly alternate between Before and After states on a 1.6s lockstep cycle with zero overlapping numbers.
 
-### 5. ✨ Tile Elimination Threshold
+### 6. ⚛️ Critical Mass & Spontaneous Fission (v1.31)
+- **Periodic Fission Countdown**: Every **25 moves**, the highest-numbered target tile(s) on the board spontaneously erupts into two halves ($T / 2$).
+- **Simultaneous Multi-Tile Detonations**: If multiple tiles share the maximum value (e.g. two `4,096`s or four `2,048`s), **all of them detonate simultaneously**, generating exponential multi-explosion chain reactions over successive cycles (e.g. 1 ➔ 2 ➔ 4 ➔ 8).
+- **Domino Shove Line Displacement**: The original piece remains in its cell, while the twin piece shoves neighboring solid tiles outward along open corridors until an empty space is filled.
+- **Escalating Warning Tremors (Moves 20–24)**: From move 20 of each cycle onwards, highest tiles begin vibrating with escalating tremors and pulsing warning badges (`💥 in 5` down to `💥 NEXT!`), accompanied by Geiger ticks in audio.
+- **Dedicated HUD Status Pill (`#fissionBox`)**: Live countdown badge in the breaker banner tracks moves until next fission with flashing warning states.
+- **Seismic Audio Synthesis**: Features a sub-bass seismic impact with resonant dual twin harmonics synthesized via Web Audio API.
+
+### 7. ✨ Tile Elimination Threshold
 - When any target tile is reduced to **16, 8, 4, or 2** ($\le 16$), it shatters into sparkling particles and **completely disappears from the board**.
 - **Tier Victory**: Eliminate all target tiles to clear the board and advance to the next level!
 
-### 6. 🎯 Real-Time Move Preview & Consequence HUD
+### 8. 🎯 Real-Time Move Preview & Consequence HUD
 - **Eliminates Hidden Traversal Guesswork**: In 2048, sliding tiles follow strict row/column traversal orders that can make movements hard to anticipate.
 - **Always-On Neutral Radar**: Preview lines, blinking elimination targets, and transparent division outcomes are rendered **by default in real-time**—no dragging or aiming required!
 - **Blinking Elimination & Anti-Phase Fission Flip**: Any target tile guaranteed to be cleared in a given direction **blinks continuously** with a pulsing neon green outline. Target tiles that will be divided/broken run an **alternating anti-phase flip** with their overlapping resultant ghost piece: when the original target tile is visible, the ghost piece is hidden; when the ghost piece appears, the target tile hides. Zero overlapping numbers at any time!

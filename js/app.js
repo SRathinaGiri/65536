@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const levelValEl = document.getElementById('levelValue');
   const bigBangBox = document.getElementById('bigBangBox');
   const bigBangCount = document.getElementById('bigBangCount');
+  const fissionBox = document.getElementById('fissionBox');
+  const fissionCount = document.getElementById('fissionCount');
   const undoBtn = document.getElementById('undoBtn');
   const hammerBtn = document.getElementById('hammerBtn');
   const hammerCountEl = document.getElementById('hammerCount');
@@ -52,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const toggleTrajectoryPreview = document.getElementById('toggleTrajectoryPreview');
   const toggleTrajectoryCompass = document.getElementById('toggleTrajectoryCompass');
   const toggleSupernovaFinishing = document.getElementById('toggleSupernovaFinishing');
+  const toggleSpontaneousFission = document.getElementById('toggleSpontaneousFission');
   const trajectoryCompass = document.getElementById('trajectoryCompass');
   const chipOutcomeUp = document.getElementById('chipOutcomeUp');
   const chipOutcomeLeft = document.getElementById('chipOutcomeLeft');
@@ -113,7 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
     gridSize: settings.gridSize,
     breakerValues: breakerValues,
     divisionMode: settings.divisionMode,
-    supernovaFinishing: settings.supernovaFinishing !== false
+    supernovaFinishing: settings.supernovaFinishing !== false,
+    spontaneousFissionEnabled: settings.spontaneousFission !== false
   });
 
   const renderer = new BoardRenderer(boardEl, canvasEl);
@@ -353,6 +357,12 @@ document.addEventListener('DOMContentLoaded', () => {
     updateHammerUI();
     updateWarpUI();
     updateBigBangUI();
+    updateFissionUI();
+
+    // Play Geiger warning ticks on moves 20 to 24
+    if (state.fissionStatus && state.fissionStatus.isWarning && !game.isWon && !game.isGameOver) {
+      window.soundFX.playGeigerWarning(state.fissionStatus.warningLevel);
+    }
 
     // Score gain popup
     if (state.score > prevScore) {
@@ -495,6 +505,43 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         showToast('💥 Big Bang Finishing: Clears the board when grid overflow becomes impossible!');
       }
+    });
+  }
+
+  // Critical Mass / Spontaneous Fission HUD status update
+  function updateFissionUI() {
+    if (!fissionBox || !fissionCount) return;
+    if (typeof game.getFissionStatus !== 'function') return;
+
+    const status = game.getFissionStatus();
+    if (!status || !status.enabled || game.isWon || game.isGameOver) {
+      fissionBox.style.display = 'none';
+      return;
+    }
+    fissionBox.style.display = 'inline-flex';
+
+    if (status.movesLeft === 1) {
+      fissionBox.className = 'fission-box imminent';
+      fissionCount.textContent = '1 (NEXT!)';
+      fissionBox.setAttribute('title', `💥 CRITICAL MASS IMMINENT! Next move erupts ${status.maxTileCount} tile(s) of ${status.maxVal.toLocaleString()} into two!`);
+    } else if (status.isWarning) {
+      fissionBox.className = 'fission-box warning';
+      fissionCount.textContent = `${status.movesLeft}`;
+      fissionBox.setAttribute('title', `⚠️ Critical Mass Warning: In ${status.movesLeft} moves, highest tile(s) (${status.maxVal.toLocaleString()}) will break into two!`);
+    } else {
+      fissionBox.className = 'fission-box';
+      fissionCount.textContent = `${status.movesLeft}`;
+      fissionBox.setAttribute('title', `⚛️ Spontaneous Fission: Every 25 moves, highest tile(s) split into two (in ${status.movesLeft} moves).`);
+    }
+  }
+
+  if (fissionBox) {
+    fissionBox.addEventListener('click', () => {
+      if (typeof game.getFissionStatus !== 'function') return;
+      const status = game.getFissionStatus();
+      if (!status || !status.enabled) return;
+      const halfVal = status.maxVal ? status.maxVal / 2 : 0;
+      showToast(`⚛️ Fission in ${status.movesLeft} move(s): ${status.maxTileCount} tile(s) of ${status.maxVal.toLocaleString()} will split into 2 × ${halfVal.toLocaleString()}!`);
     });
   }
 
@@ -649,6 +696,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.soundFX.playBump();
   });
 
+  game.on('spontaneousFission', (data) => {
+    window.soundFX.playSeismicFission();
+    renderer.triggerFissionExplosion(data);
+    const countStr = data.count > 1 ? `${data.count}× tiles of ` : '';
+    showToast(`⚛️ Spontaneous Fission! ${countStr}${data.oldValue.toLocaleString()} broke into 2 × ${(data.newValue).toLocaleString()}!`);
+  });
+
   game.on('victory', (data) => {
     window.soundFX.playVictory();
     winScoreEl.textContent = data.score.toLocaleString();
@@ -782,6 +836,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (toggleSupernovaFinishing) {
       toggleSupernovaFinishing.checked = current.supernovaFinishing !== false;
     }
+    if (toggleSpontaneousFission) {
+      toggleSpontaneousFission.checked = current.spontaneousFission !== false;
+    }
     settingsModal.classList.add('active');
   });
 
@@ -793,12 +850,15 @@ document.addEventListener('DOMContentLoaded', () => {
       dpadEnabled: toggleDpad.checked,
       trajectoryPreview: toggleTrajectoryPreview ? toggleTrajectoryPreview.checked : true,
       compassEnabled: toggleTrajectoryCompass ? toggleTrajectoryCompass.checked : true,
-      supernovaFinishing: toggleSupernovaFinishing ? toggleSupernovaFinishing.checked : true
+      supernovaFinishing: toggleSupernovaFinishing ? toggleSupernovaFinishing.checked : true,
+      spontaneousFission: toggleSpontaneousFission ? toggleSpontaneousFission.checked : true
     };
     window.storageManager.saveSettings(newSettings);
     settings = newSettings;
     game.supernovaFinishing = newSettings.supernovaFinishing !== false;
+    game.spontaneousFissionEnabled = newSettings.spontaneousFission !== false;
     updateBigBangUI();
+    updateFissionUI();
     applySettingsClasses();
     settingsModal.classList.remove('active');
 
@@ -1171,7 +1231,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Local-first Service Worker registration & version management
-  const APP_VERSION = '1.30';
+  const APP_VERSION = '1.31';
   console.log(`%c[65536]%c Local-first PWA v${APP_VERSION} active`, 'color:#8b5cf6;font-weight:bold;', 'color:#00f0ff;font-weight:bold;');
 
   if ('serviceWorker' in navigator) {
@@ -1239,8 +1299,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Initial trajectory preview, compass display & Big Bang status
+  // Initial trajectory preview, compass display, Fission countdown & Big Bang status
   updateCompassOutcomes();
   updateTrajectoryDisplay();
+  updateFissionUI();
   updateBigBangUI();
 });

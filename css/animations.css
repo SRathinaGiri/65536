@@ -359,5 +359,112 @@
   40%, 60% { transform: translate(6px, -4px) scale(1.02); filter: brightness(1.7); }
 }
 
+/* Critical Mass / Spontaneous Fission Animations */
+.tile-critical-warning-1 .tile-inner {
+  animation: fissionTremor1 0.4s ease-in-out infinite alternate !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.6), inset 0 0 6px rgba(255, 255, 255, 0.4) !important;
+}
+
+.tile-critical-warning-2 .tile-inner {
+  animation: fissionTremor2 0.3s ease-in-out infinite alternate !important;
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.75), inset 0 0 8px rgba(255, 255, 255, 0.5) !important;
+}
+
+.tile-critical-warning-3 .tile-inner {
+  animation: fissionTremor3 0.22s ease-in-out infinite alternate !important;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.85), inset 0 0 10px rgba(255, 255, 255, 0.6) !important;
+}
+
+.tile-critical-warning-4 .tile-inner {
+  animation: fissionTremor4 0.15s ease-in-out infinite alternate !important;
+  box-shadow: 0 0 26px rgba(220, 38, 38, 0.95), inset 0 0 14px rgba(255, 255, 255, 0.7) !important;
+  filter: brightness(1.2) !important;
+}
+
+.tile-critical-warning-5 .tile-inner {
+  animation: fissionTremor5 0.08s ease-in-out infinite alternate !important;
+  box-shadow: 0 0 32px rgba(255, 0, 85, 1), 0 0 48px rgba(255, 215, 0, 0.8), inset 0 0 18px #ffffff !important;
+  filter: brightness(1.35) !important;
+}
+
+@keyframes fissionTremor1 {
+  0% { transform: scale(1) rotate(0deg); }
+  100% { transform: scale(1.02) rotate(0.6deg); }
+}
+
+@keyframes fissionTremor2 {
+  0% { transform: translate(-1px, 0.5px) scale(1.02) rotate(-0.8deg); }
+  100% { transform: translate(1px, -0.5px) scale(1.03) rotate(0.8deg); }
+}
+
+@keyframes fissionTremor3 {
+  0% { transform: translate(-1.5px, -1px) scale(1.03) rotate(-1.2deg); }
+  100% { transform: translate(1.5px, 1px) scale(1.04) rotate(1.2deg); }
+}
+
+@keyframes fissionTremor4 {
+  0% { transform: translate(-2px, 1.5px) scale(1.04) rotate(-1.8deg); }
+  100% { transform: translate(2px, -1.5px) scale(1.05) rotate(1.8deg); }
+}
+
+@keyframes fissionTremor5 {
+  0% { transform: translate(-3px, -2px) scale(1.05) rotate(-2.5deg); }
+  50% { transform: translate(2px, 3px) scale(1.07) rotate(2deg); }
+  100% { transform: translate(3px, -2px) scale(1.06) rotate(-2deg); }
+}
+
+.tile-fission-burst .tile-inner {
+  animation: fissionBurstExplode 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards !important;
+}
+
+@keyframes fissionBurstExplode {
+  0% {
+    transform: scale(1.1);
+    filter: brightness(2.5) drop-shadow(0 0 25px #ff0055);
+  }
+  40% {
+    transform: scale(1.28);
+    filter: brightness(3) drop-shadow(0 0 45px #ffffff);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+.board-fission-shake {
+  animation: fissionBoardShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both !important;
+}
+
+@keyframes fissionBoardShake {
+  0%, 100% { transform: translate(0, 0); }
+  15%, 85% { transform: translate(-4px, 3px); }
+  30%, 70% { transform: translate(5px, -4px); }
+  45% { transform: translate(-5px, -3px); }
+  60% { transform: translate(4px, 4px); }
+}
+
+.fission-tile-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(220, 38, 38, 0.92);
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+  animation: fissionBadgePulse 0.5s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes fissionBadgePulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.15); }
+}
+
 
 
