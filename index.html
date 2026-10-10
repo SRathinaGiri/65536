@@ -89,10 +89,10 @@
           <span class="breaker-pill pill-8">÷8</span>
         </div>
       </div>
-      <div id="fissionBox" class="fission-box" title="Spontaneous Fission: Every 25 moves, highest tile(s) split into two" role="status" aria-live="polite">
+      <div id="fissionBox" class="fission-box" title="Spontaneous Fission: Every 50 moves, highest tile(s) split into two" role="status" aria-live="polite">
         <span class="fission-icon">⚛️</span>
         <span class="fission-label">Fission:</span>
-        <span id="fissionCount" class="fission-val">25</span>
+        <span id="fissionCount" class="fission-val">50</span>
       </div>
       <div id="bigBangBox" class="big-bang-box" title="Supernova Big Bang Finishing: tiles to reduce before auto-clear triggers" role="status" aria-live="polite">
         <span class="big-bang-icon">💥</span>
@@ -249,8 +249,8 @@
         </div>
 
         <div class="rule-highlight" style="background: rgba(236, 72, 153, 0.12); border-left-color: #ec4899;">
-          <strong>⚛️ Spontaneous Fission (Every 25 Moves):</strong>
-          To keep the game dynamic and exciting, every 25th move causes the highest-numbered target tile(s) to spontaneously burst into two halves (e.g. 4096 ➔ 2 × 2048)! If multiple tiles share the highest value, all of them erupt simultaneously. The twin pieces shove neighboring solid tiles outward along straight lines until an empty cell is filled. Watch the <strong>⚛️ Fission</strong> badge and warning tremors starting from move 20!
+          <strong>⚛️ Spontaneous Fission (Every 50 Moves):</strong>
+          To keep the game dynamic and exciting, every 50th move causes the highest-numbered target tile(s) to spontaneously burst into two halves (e.g. 4096 ➔ 2 × 2048)! If multiple tiles share the highest value, all of them erupt simultaneously. The twin pieces shove neighboring solid tiles outward along straight lines until an empty cell is filled. Watch the <strong>⚛️ Fission</strong> badge and warning tremors starting from move 45!
         </div>
 
         <div class="rule-highlight" style="background: rgba(0, 240, 255, 0.12); border-left-color: #00f0ff;">
@@ -332,7 +332,7 @@
 
         <label class="checkbox-group">
           <input type="checkbox" id="toggleSpontaneousFission" checked>
-          <span>⚛️ Spontaneous Fission (Every 25 moves, highest tile splits into two)</span>
+          <span>⚛️ Spontaneous Fission (Every 50 moves, highest tile splits into two)</span>
         </label>
 
         <label class="checkbox-group">

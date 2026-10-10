@@ -175,7 +175,7 @@ class BoardRenderer {
         classNames += ' tile-immune';
       }
 
-      // Check Critical Mass / Spontaneous Fission warning (moves 20 to 24)
+      // Check Critical Mass / Spontaneous Fission warning (moves 45 to 49)
       if (fissionStatus && fissionStatus.isWarning && fissionStatus.maxTileIds && fissionStatus.maxTileIds.has(tile.id)) {
         classNames += ` tile-critical-warning tile-critical-warning-${fissionStatus.warningLevel}`;
       }

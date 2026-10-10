@@ -68,10 +68,10 @@ When the breaker collides with a target number tile:
 - **Synchronized Alternating Flips**: Target collision cells and breaker starting cells cleanly alternate between Before and After states on a 1.6s lockstep cycle with zero overlapping numbers.
 
 ### 6. ⚛️ Critical Mass & Spontaneous Fission (v1.31)
-- **Periodic Fission Countdown**: Every **25 moves**, the highest-numbered target tile(s) on the board spontaneously erupts into two halves ($T / 2$).
+- **Periodic Fission Countdown**: Every **50 moves**, the highest-numbered target tile(s) on the board spontaneously erupts into two halves ($T / 2$).
 - **Simultaneous Multi-Tile Detonations**: If multiple tiles share the maximum value (e.g. two `4,096`s or four `2,048`s), **all of them detonate simultaneously**, generating exponential multi-explosion chain reactions over successive cycles (e.g. 1 ➔ 2 ➔ 4 ➔ 8).
 - **Domino Shove Line Displacement**: The original piece remains in its cell, while the twin piece shoves neighboring solid tiles outward along open corridors until an empty space is filled.
-- **Escalating Warning Tremors (Moves 20–24)**: From move 20 of each cycle onwards, highest tiles begin vibrating with escalating tremors and pulsing warning badges (`💥 in 5` down to `💥 NEXT!`), accompanied by Geiger ticks in audio.
+- **Escalating Warning Tremors (Moves 45–49)**: From move 45 of each cycle onwards, highest tiles begin vibrating with escalating tremors and pulsing warning badges (`💥 in 5` down to `💥 NEXT!`), accompanied by Geiger ticks in audio.
 - **Dedicated HUD Status Pill (`#fissionBox`)**: Live countdown badge in the breaker banner tracks moves until next fission with flashing warning states.
 - **Seismic Audio Synthesis**: Features a sub-bass seismic impact with resonant dual twin harmonics synthesized via Web Audio API.
 

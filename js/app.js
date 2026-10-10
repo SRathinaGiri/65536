@@ -359,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateBigBangUI();
     updateFissionUI();
 
-    // Play Geiger warning ticks on moves 20 to 24
+    // Play Geiger warning ticks on moves 45 to 49
     if (state.fissionStatus && state.fissionStatus.isWarning && !game.isWon && !game.isGameOver) {
       window.soundFX.playGeigerWarning(state.fissionStatus.warningLevel);
     }
@@ -531,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       fissionBox.className = 'fission-box';
       fissionCount.textContent = `${status.movesLeft}`;
-      fissionBox.setAttribute('title', `⚛️ Spontaneous Fission: Every 25 moves, highest tile(s) split into two (in ${status.movesLeft} moves).`);
+      fissionBox.setAttribute('title', `⚛️ Spontaneous Fission: Every 50 moves, highest tile(s) split into two (in ${status.movesLeft} moves).`);
     }
   }
 

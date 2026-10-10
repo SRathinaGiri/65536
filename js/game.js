@@ -406,13 +406,13 @@ class GameEngine {
     return best;
   }
 
-  // Get status of Critical Mass / Spontaneous Fission (every 25 moves)
+  // Get status of Critical Mass / Spontaneous Fission (every 50 moves, warning from move 45)
   getFissionStatus() {
     if (this.spontaneousFissionEnabled === false) {
       return {
         enabled: false,
         cycleMoves: 0,
-        movesLeft: 25,
+        movesLeft: 50,
         isWarning: false,
         warningLevel: 0,
         maxVal: 0,
@@ -422,11 +422,13 @@ class GameEngine {
       };
     }
 
-    const cycleMoves = this.moves % 25;
-    // movesLeft: on move 0 -> 25; move 1 -> 24; move 20 -> 5; move 24 -> 1; move 25 -> 25
-    const movesLeft = cycleMoves === 0 ? 25 : (25 - cycleMoves);
-    const isWarning = cycleMoves >= 20 && cycleMoves < 25;
-    const warningLevel = isWarning ? (cycleMoves - 19) : 0; // 1 (move 20) to 5 (move 24)
+    const FISSION_CYCLE = 50;
+    const WARNING_START = 45;
+    const cycleMoves = this.moves % FISSION_CYCLE;
+    // movesLeft: on move 0 -> 50; move 1 -> 49; move 45 -> 5; move 49 -> 1; move 50 -> 50
+    const movesLeft = cycleMoves === 0 ? FISSION_CYCLE : (FISSION_CYCLE - cycleMoves);
+    const isWarning = cycleMoves >= WARNING_START && cycleMoves < FISSION_CYCLE;
+    const warningLevel = isWarning ? (cycleMoves - (WARNING_START - 1)) : 0; // 1 (move 45) to 5 (move 49)
 
     let maxVal = 0;
     const maxTiles = [];
@@ -458,7 +460,7 @@ class GameEngine {
     };
   }
 
-  // Execute Spontaneous Fission: every 25th move, all highest target tile(s) split into two halves
+  // Execute Spontaneous Fission: every 50th move, all highest target tile(s) split into two halves
   executeSpontaneousFission() {
     if (this.spontaneousFissionEnabled === false) return null;
     if (this.isWon || this.isGameOver) return null;
@@ -1023,8 +1025,8 @@ class GameEngine {
         // Spawn a new breaker tile on an empty cell
         const newBreaker = this.spawnRandomBreaker();
 
-        // 💥 SPONTANEOUS FISSION EVERY 25 MOVES!
-        if (this.moves > 0 && this.moves % 25 === 0) {
+        // 💥 SPONTANEOUS FISSION EVERY 50 MOVES!
+        if (this.moves > 0 && this.moves % 50 === 0) {
           fissionData = this.executeSpontaneousFission();
           if (fissionData) {
             // Re-check victory in case tiles divided into <= 16 and eliminated

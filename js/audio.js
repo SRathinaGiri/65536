@@ -402,7 +402,7 @@ class SoundFX {
     this.playNoise(0.04, 0.08 + Math.min(progress, 1) * 0.06);
   }
 
-  // Escalating Geiger Warning Ticks on moves 20 to 24
+  // Escalating Geiger Warning Ticks on moves 45 to 49
   playGeigerWarning(warningLevel = 1) {
     if (this.muted) return;
     this.init();
@@ -432,7 +432,7 @@ class SoundFX {
     }
   }
 
-  // Seismic Spontaneous Fission Eruption (every 25th move)
+  // Seismic Spontaneous Fission Eruption (every 50th move)
   playSeismicFission() {
     if (this.muted) return;
     this.init();
