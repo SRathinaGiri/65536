@@ -2,7 +2,7 @@
 
 [![Play Online](https://img.shields.io/badge/Play%20Online-srathinagiri.github.io%2F65536-00f0ff?style=for-the-badge&logo=githubpages&logoColor=white)](https://srathinagiri.github.io/65536/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Local--First%20%26%20Offline-10b981?style=for-the-badge&logo=pwa&logoColor=white)](https://srathinagiri.github.io/65536/)
-[![Version](https://img.shields.io/badge/Version-v1.32-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
+[![Version](https://img.shields.io/badge/Version-v1.33-8b5cf6?style=for-the-badge)](https://github.com/SRathinaGiri/65536)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 An addictive, tactical HTML5 Progressive Web App (PWA) that inverts the iconic **2048** mechanic on its head.
@@ -67,12 +67,12 @@ When the breaker collides with a target number tile:
 - **Full Move Preview Support**: Both newly divided quotient pieces and displaced solid tiles (with cyan dashed borders and directional movement arrows `▲`, `▼`, `◀`, `▶`) are rendered in real time.
 - **Synchronized Alternating Flips**: Target collision cells and breaker starting cells cleanly alternate between Before and After states on a 1.6s lockstep cycle with zero overlapping numbers.
 
-### 6. ⚛️ Critical Mass & Spontaneous Fission (v1.32)
-- **Periodic Fission Countdown**: Every **50 moves**, the highest-numbered target tile(s) on the board spontaneously erupts into two halves ($T / 2$).
-- **Simultaneous Multi-Tile Detonations**: If multiple tiles share the maximum value (e.g. two `4,096`s or four `2,048`s), **all of them detonate simultaneously**, generating exponential multi-explosion chain reactions over successive cycles (e.g. 1 ➔ 2 ➔ 4 ➔ 8).
+### 6. ⚛️ Critical Mass & Spontaneous Fission (v1.33)
+- **Periodic Fission Countdown**: Every **50 moves**, **exactly one** of the highest-numbered target tiles on the board spontaneously erupts into two halves ($T / 2$).
+- **Random Tie-Breaking (Controlled Linear Growth)**: If multiple tiles share the maximum value (e.g. two `4,096`s or four `2,048`s), **one tile is chosen at random** to split into two. This maintains controlled, linear pacing (+1 tile per 50 moves) and eliminates runaway exponential board saturation ($2 \to 4 \to 8 \to 16 \to 32$ over 250 moves).
 - **Domino Shove Line Displacement**: The original piece remains in its cell, while the twin piece shoves neighboring solid tiles outward along open corridors until an empty space is filled.
-- **Escalating Warning Tremors (Moves 45–49)**: From move 45 of each cycle onwards, highest tiles begin vibrating with escalating tremors and pulsing warning badges (`💥 in 5` down to `💥 NEXT!`), accompanied by Geiger ticks in audio.
-- **Tuned Moderate Challenge**: Calibrated to 50 moves with a 5-move warning window (moves 45–49), striking an ideal, moderately challenging balance. It provides players ample breathing room for deliberate setups and breaker alignment while keeping passive camping in check.
+- **Targeted Warning Tremors (Moves 45–49)**: From move 45 of each cycle onwards, the specific designated target tile begins vibrating with escalating tremors and displays a pulsing countdown badge (`💥 in 5` down to `💥 NEXT!`), accompanied by Geiger ticks in audio.
+- **Tuned Moderate Challenge**: Calibrated to 50 moves with a 5-move single-tile warning window, striking a balanced, moderately challenging gameplay flow that prevents passive camping without causing impossible board gridlock.
 - **Dedicated HUD Status Pill (`#fissionBox`)**: Live countdown badge in the breaker banner tracks moves until next fission with flashing warning states.
 - **Seismic Audio Synthesis**: Features a sub-bass seismic impact with resonant dual twin harmonics synthesized via Web Audio API.
 
@@ -130,10 +130,11 @@ The game features an escalating campaign spanning powers of 2:
 > **Persistent Auto-Save**: Your active board layout, score, hammers, warps, and highest level reached are continuously saved in `localStorage`, so you can close the app and resume right where you left off.
 
 ### ⚖️ Moderately Challenging Gameplay Balance
-With the **v1.32** balance tuning, 65536 delivers a **satisfying, moderately challenging** puzzle experience:
+With the **v1.33** balance tuning, 65536 delivers a **satisfying, moderately challenging** puzzle experience:
 - **No Mindless Swiping**: Random swiping rapidly triggers kinetic shockwave tile displacement, filling open corridors and quickly resulting in board gridlock.
-- **No Infinite Stalling**: The 50-move Spontaneous Fission clock prevents players from coasting by only chipping small tiles in corners—highest-numbered titans will inevitably undergo nuclear fracture.
-- **Tactical Mastery Rewarded**: Clear laser paths, anti-phase ghost previews, escalating tremor warnings (moves 45–49), and calculated deployment of Shatter Hammers ($\le 256$) and Breaker Warps give strategic players the depth needed to conquer every tier up to **65,536**!
+- **Controlled Linear Pacing**: Instead of all maximum tiles erupting simultaneously and exponentially filling the grid ($2 \to 4 \to 8 \to 16 \to 32$), exactly **one tile bursts per 50 moves** (with ties broken randomly).
+- **No Infinite Stalling**: The 50-move Spontaneous Fission clock prevents players from coasting by only chipping small tiles in corners—the largest titans will steadily fracture if left unattended.
+- **Tactical Mastery Rewarded**: Clear laser paths, anti-phase ghost previews, targeted single-tile tremor warnings (moves 45–49), and calculated deployment of Shatter Hammers ($\le 256$) and Breaker Warps give strategic players the depth needed to conquer every tier up to **65,536**!
 
 ---
 

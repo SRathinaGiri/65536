@@ -24,6 +24,7 @@ class GameEngine {
     this.sessionStartTime = Date.now();
     this.supernovaFinishing = options.supernovaFinishing !== false;
     this.spontaneousFissionEnabled = options.spontaneousFissionEnabled !== false;
+    this.fissionTargetTileId = null; // Targeted tile ID during warning phase
     
     this.listeners = [];
   }
@@ -60,7 +61,7 @@ class GameEngine {
       : 0;
     return {
       game: '65536',
-      version: '1.32',
+      version: '1.33',
       exportedAt: new Date().toISOString(),
       gridSize: this.gridSize,
       startValue: this.currentStartValue,
@@ -112,6 +113,7 @@ class GameEngine {
     this.isGameOver = false;
     this.undoStack = [];
     this.tileIdCounter = 1;
+    this.fissionTargetTileId = null;
 
     // Place the starting target tile in the center
     const centerR = Math.floor(this.gridSize / 2);
@@ -407,6 +409,7 @@ class GameEngine {
   }
 
   // Get status of Critical Mass / Spontaneous Fission (every 50 moves, warning from move 45)
+  // Exactly ONE tile undergoes fission. If multiple tiles share the highest value, one is selected at random.
   getFissionStatus() {
     if (this.spontaneousFissionEnabled === false) {
       return {
@@ -417,7 +420,9 @@ class GameEngine {
         warningLevel: 0,
         maxVal: 0,
         maxTileCount: 0,
+        candidatesCount: 0,
         maxTileIds: new Set(),
+        targetTileId: null,
         canFission: false
       };
     }
@@ -447,6 +452,23 @@ class GameEngine {
       }
     }
 
+    let targetTileId = null;
+    if (isWarning && maxVal > 16 && maxTiles.length > 0) {
+      // If we already have a chosen target tile that is still among maxTiles, stick with it
+      if (this.fissionTargetTileId && maxTiles.some(t => t.id === this.fissionTargetTileId)) {
+        targetTileId = this.fissionTargetTileId;
+      } else {
+        // Randomly pick one among the tied maximum tiles
+        const chosen = maxTiles[Math.floor(Math.random() * maxTiles.length)];
+        this.fissionTargetTileId = chosen.id;
+        targetTileId = chosen.id;
+      }
+    } else {
+      this.fissionTargetTileId = null;
+    }
+
+    const maxTileIds = targetTileId ? new Set([targetTileId]) : new Set();
+
     return {
       enabled: true,
       cycleMoves,
@@ -454,13 +476,16 @@ class GameEngine {
       isWarning,
       warningLevel,
       maxVal,
-      maxTileCount: maxTiles.length,
-      maxTileIds: new Set(maxTiles.map(t => t.id)),
+      maxTileCount: maxTiles.length > 0 ? 1 : 0, // Exactly ONE tile undergoes fission
+      candidatesCount: maxTiles.length,
+      maxTileIds,
+      targetTileId,
       canFission: maxVal > 16 && maxTiles.length > 0
     };
   }
 
-  // Execute Spontaneous Fission: every 50th move, all highest target tile(s) split into two halves
+  // Execute Spontaneous Fission: every 50th move, exactly ONE highest target tile splits into two halves.
+  // If multiple tiles share the maximum value, randomly select one of them.
   executeSpontaneousFission() {
     if (this.spontaneousFissionEnabled === false) return null;
     if (this.isWon || this.isGameOver) return null;
@@ -477,117 +502,120 @@ class GameEngine {
 
     if (maxVal <= 16) return null;
 
-    const targetTiles = [];
+    const maxTiles = [];
     for (let r = 0; r < this.gridSize; r++) {
       for (let c = 0; c < this.gridSize; c++) {
         const tile = this.grid[r][c];
         if (tile && tile.type === 'target' && tile.value === maxVal) {
-          targetTiles.push(tile);
+          maxTiles.push(tile);
         }
       }
     }
 
-    if (targetTiles.length === 0) return null;
+    if (maxTiles.length === 0) return null;
+
+    // Pick exactly ONE tile to burst (prefer the one warned during moves 45-49, or pick randomly if tied)
+    let targetTile = null;
+    if (this.fissionTargetTileId) {
+      targetTile = maxTiles.find(t => t.id === this.fissionTargetTileId);
+    }
+    if (!targetTile) {
+      targetTile = maxTiles[Math.floor(Math.random() * maxTiles.length)];
+    }
+    this.fissionTargetTileId = null;
+
+    const curR = targetTile.row;
+    const curC = targetTile.col;
+    if (this.grid[curR][curC] !== targetTile) return null;
 
     const halfVal = maxVal / 2;
     const fissionResults = [];
 
-    for (const targetTile of targetTiles) {
-      const curR = targetTile.row;
-      const curC = targetTile.col;
-
-      if (this.grid[curR][curC] !== targetTile) continue;
-
-      if (halfVal <= 16) {
-        // Tile halves to <= 16, which immediately shatters both pieces completely
-        targetTile.isEliminated = true;
-        this.grid[curR][curC] = null;
-        this.tilesShattered += 2;
-        this.score += maxVal * 2;
-        fissionResults.push({
-          row: curR,
-          col: curC,
-          oldValue: maxVal,
-          newValue: halfVal,
-          eliminated: true
-        });
-      } else {
-        // Half 1 stays in current cell
-        targetTile.value = halfVal;
-        targetTile.justDivided = true;
-        targetTile.wasFission = true;
-
-        // Half 2 (twin piece): find direction with closest empty cell and shove line outward
-        const bestDir = this.findBestDisplacementDirection(curR, curC);
-        let twinR = null;
-        let twinC = null;
-
-        if (bestDir) {
-          if (bestDir.distance > 1) {
-            // Push intermediate tiles outward along line until the empty space is filled
-            for (let step = bestDir.distance - 1; step >= 1; step--) {
-              const fromR = curR + bestDir.dr * step;
-              const fromC = curC + bestDir.dc * step;
-              const toR = curR + bestDir.dr * (step + 1);
-              const toC = curC + bestDir.dc * (step + 1);
-
-              const movingTile = this.grid[fromR][fromC];
-              if (movingTile) {
-                this.grid[toR][toC] = movingTile;
-                movingTile.row = toR;
-                movingTile.col = toC;
-                movingTile.wasPushed = true;
-                movingTile.pushDr = bestDir.dr;
-                movingTile.pushDc = bestDir.dc;
-                this.grid[fromR][fromC] = null;
-              }
-            }
-          }
-          twinR = curR + bestDir.dr;
-          twinC = curC + bestDir.dc;
-        } else {
-          // Fallback: nearest empty cell on the board
-          const fallback = this.findNearestEmptyCell(curR, curC);
-          if (fallback) {
-            twinR = fallback.r;
-            twinC = fallback.c;
-          }
-        }
-
-        if (twinR !== null && twinC !== null) {
-          const twinTile = this.addTile(twinR, twinC, halfVal, 'target');
-          twinTile.justDivided = true;
-          twinTile.wasFission = true;
-        }
-
-        this.score += maxVal;
-        this.tilesShattered += 1;
-
-        fissionResults.push({
-          row: curR,
-          col: curC,
-          twinRow: twinR,
-          twinCol: twinC,
-          oldValue: maxVal,
-          newValue: halfVal,
-          eliminated: false
-        });
-      }
-    }
-
-    if (fissionResults.length > 0) {
-      const payload = {
-        move: this.moves,
-        count: fissionResults.length,
+    if (halfVal <= 16) {
+      // Tile halves to <= 16, which immediately shatters both pieces completely
+      targetTile.isEliminated = true;
+      this.grid[curR][curC] = null;
+      this.tilesShattered += 2;
+      this.score += maxVal * 2;
+      fissionResults.push({
+        row: curR,
+        col: curC,
         oldValue: maxVal,
         newValue: halfVal,
-        results: fissionResults
-      };
-      this.emit('spontaneousFission', payload);
-      return payload;
+        eliminated: true
+      });
+    } else {
+      // Half 1 stays in current cell
+      targetTile.value = halfVal;
+      targetTile.justDivided = true;
+      targetTile.wasFission = true;
+
+      // Half 2 (twin piece): find direction with closest empty cell and shove line outward
+      const bestDir = this.findBestDisplacementDirection(curR, curC);
+      let twinR = null;
+      let twinC = null;
+
+      if (bestDir) {
+        if (bestDir.distance > 1) {
+          // Push intermediate tiles outward along line until the empty space is filled
+          for (let step = bestDir.distance - 1; step >= 1; step--) {
+            const fromR = curR + bestDir.dr * step;
+            const fromC = curC + bestDir.dc * step;
+            const toR = curR + bestDir.dr * (step + 1);
+            const toC = curC + bestDir.dc * (step + 1);
+
+            const movingTile = this.grid[fromR][fromC];
+            if (movingTile) {
+              this.grid[toR][toC] = movingTile;
+              movingTile.row = toR;
+              movingTile.col = toC;
+              movingTile.wasPushed = true;
+              movingTile.pushDr = bestDir.dr;
+              movingTile.pushDc = bestDir.dc;
+              this.grid[fromR][fromC] = null;
+            }
+          }
+        }
+        twinR = curR + bestDir.dr;
+        twinC = curC + bestDir.dc;
+      } else {
+        // Fallback: nearest empty cell on the board
+        const fallback = this.findNearestEmptyCell(curR, curC);
+        if (fallback) {
+          twinR = fallback.r;
+          twinC = fallback.c;
+        }
+      }
+
+      if (twinR !== null && twinC !== null) {
+        const twinTile = this.addTile(twinR, twinC, halfVal, 'target');
+        twinTile.justDivided = true;
+        twinTile.wasFission = true;
+      }
+
+      this.score += maxVal;
+      this.tilesShattered += 1;
+
+      fissionResults.push({
+        row: curR,
+        col: curC,
+        twinRow: twinR,
+        twinCol: twinC,
+        oldValue: maxVal,
+        newValue: halfVal,
+        eliminated: false
+      });
     }
 
-    return null;
+    const payload = {
+      move: this.moves,
+      count: 1,
+      oldValue: maxVal,
+      newValue: halfVal,
+      results: fissionResults
+    };
+    this.emit('spontaneousFission', payload);
+    return payload;
   }
 
   spawnRandomBreaker() {
@@ -655,6 +683,7 @@ class GameEngine {
     if (snapshot.lastHammerScore !== undefined) this.lastHammerScore = snapshot.lastHammerScore;
     if (snapshot.warpCharges !== undefined) this.warpCharges = snapshot.warpCharges;
     this.isGameOver = false;
+    this.fissionTargetTileId = null;
 
     if (this.moveHistory && this.moveHistory.length > 1) {
       this.moveHistory.pop();
@@ -1766,6 +1795,7 @@ class GameEngine {
       this.spawnRandomBreaker();
     }
 
+    this.fissionTargetTileId = null;
     this.undoStack = [];
     this.saveState();
     this.emit('stateChange', this.getState());

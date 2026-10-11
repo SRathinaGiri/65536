@@ -523,15 +523,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (status.movesLeft === 1) {
       fissionBox.className = 'fission-box imminent';
       fissionCount.textContent = '1 (NEXT!)';
-      fissionBox.setAttribute('title', `💥 CRITICAL MASS IMMINENT! Next move erupts ${status.maxTileCount} tile(s) of ${status.maxVal.toLocaleString()} into two!`);
+      fissionBox.setAttribute('title', `💥 CRITICAL MASS IMMINENT! Next move erupts 1 tile of ${status.maxVal.toLocaleString()} into two!`);
     } else if (status.isWarning) {
       fissionBox.className = 'fission-box warning';
       fissionCount.textContent = `${status.movesLeft}`;
-      fissionBox.setAttribute('title', `⚠️ Critical Mass Warning: In ${status.movesLeft} moves, highest tile(s) (${status.maxVal.toLocaleString()}) will break into two!`);
+      fissionBox.setAttribute('title', `⚠️ Critical Mass Warning: In ${status.movesLeft} moves, 1 highest tile (${status.maxVal.toLocaleString()}) will break into two!`);
     } else {
       fissionBox.className = 'fission-box';
       fissionCount.textContent = `${status.movesLeft}`;
-      fissionBox.setAttribute('title', `⚛️ Spontaneous Fission: Every 50 moves, highest tile(s) split into two (in ${status.movesLeft} moves).`);
+      fissionBox.setAttribute('title', `⚛️ Spontaneous Fission: Every 50 moves, 1 highest tile splits into two (in ${status.movesLeft} moves).`);
     }
   }
 
@@ -541,7 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const status = game.getFissionStatus();
       if (!status || !status.enabled) return;
       const halfVal = status.maxVal ? status.maxVal / 2 : 0;
-      showToast(`⚛️ Fission in ${status.movesLeft} move(s): ${status.maxTileCount} tile(s) of ${status.maxVal.toLocaleString()} will split into 2 × ${halfVal.toLocaleString()}!`);
+      showToast(`⚛️ Fission in ${status.movesLeft} move(s): 1 tile of ${status.maxVal.toLocaleString()} will split into 2 × ${halfVal.toLocaleString()}!`);
     });
   }
 
@@ -699,8 +699,7 @@ document.addEventListener('DOMContentLoaded', () => {
   game.on('spontaneousFission', (data) => {
     window.soundFX.playSeismicFission();
     renderer.triggerFissionExplosion(data);
-    const countStr = data.count > 1 ? `${data.count}× tiles of ` : '';
-    showToast(`⚛️ Spontaneous Fission! ${countStr}${data.oldValue.toLocaleString()} broke into 2 × ${(data.newValue).toLocaleString()}!`);
+    showToast(`⚛️ Spontaneous Fission! 1 tile of ${data.oldValue.toLocaleString()} broke into 2 × ${(data.newValue).toLocaleString()}!`);
   });
 
   game.on('victory', (data) => {
@@ -1231,7 +1230,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Local-first Service Worker registration & version management
-  const APP_VERSION = '1.32';
+  const APP_VERSION = '1.33';
   console.log(`%c[65536]%c Local-first PWA v${APP_VERSION} active`, 'color:#8b5cf6;font-weight:bold;', 'color:#00f0ff;font-weight:bold;');
 
   if ('serviceWorker' in navigator) {
